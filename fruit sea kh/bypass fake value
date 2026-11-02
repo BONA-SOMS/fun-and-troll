@@ -1,0 +1,206 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local data = player:WaitForChild("Data")
+
+local PROFILE_ID = 6207052436
+local selected = "Gem"
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "FakeValue"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main window
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromOffset(260, 270)
+frame.Position = UDim2.new(0.5, -130, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(90, 90, 255)
+stroke.Thickness = 1.5
+local grad = Instance.new("UIGradient", frame)
+grad.Color = ColorSequence.new(Color3.fromRGB(32, 32, 48), Color3.fromRGB(14, 14, 20))
+grad.Rotation = 90
+
+-- Profile picture
+local pfp = Instance.new("ImageLabel", frame)
+pfp.Size = UDim2.fromOffset(50, 50)
+pfp.Position = UDim2.fromOffset(12, 12)
+pfp.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+Instance.new("UICorner", pfp).CornerRadius = UDim.new(1, 0)
+local pfpStroke = Instance.new("UIStroke", pfp)
+pfpStroke.Color = Color3.fromRGB(90, 90, 255)
+pfpStroke.Thickness = 2
+
+task.spawn(function()
+    local ok, img = pcall(function()
+        return Players:GetUserThumbnailAsync(PROFILE_ID, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+    end)
+    if ok then pfp.Image = img end
+end)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -80, 0, 28)
+title.Position = UDim2.fromOffset(72, 12)
+title.BackgroundTransparency = 1
+title.Text = "Fake Value"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local sub = Instance.new("TextLabel", frame)
+sub.Size = UDim2.new(1, -80, 0, 20)
+sub.Position = UDim2.fromOffset(72, 40)
+sub.BackgroundTransparency = 1
+sub.Text = player.DisplayName
+sub.TextColor3 = Color3.fromRGB(150, 150, 190)
+sub.Font = Enum.Font.Gotham
+sub.TextSize = 13
+sub.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Selector buttons
+local function makeBtn(text, x)
+    local b = Instance.new("TextButton", frame)
+    b.Size = UDim2.new(0.5, -18, 0, 36)
+    b.Position = UDim2.new(x, x == 0 and 12 or 6, 0, 76)
+    b.Text = text
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.AutoButtonColor = false
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+    return b
+end
+local gemBtn = makeBtn("💎 Gem", 0)
+local beliBtn = makeBtn("💰 Beli", 0.5)
+
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(1, -24, 0, 40)
+box.Position = UDim2.fromOffset(12, 124)
+box.PlaceholderText = "Fake value"
+box.Text = ""
+box.TextColor3 = Color3.new(1, 1, 1)
+box.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+box.Font = Enum.Font.GothamMedium
+box.TextSize = 15
+box.BackgroundColor3 = Color3.fromRGB(38, 38, 52)
+box.ClearTextOnFocus = false
+Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
+
+local run = Instance.new("TextButton", frame)
+run.Size = UDim2.new(1, -24, 0, 44)
+run.Position = UDim2.fromOffset(12, 178)
+run.Text = "▶  Run"
+run.TextColor3 = Color3.new(1, 1, 1)
+run.Font = Enum.Font.GothamBold
+run.TextSize = 16
+run.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
+Instance.new("UICorner", run).CornerRadius = UDim.new(0, 12)
+
+local footer = Instance.new("TextLabel", frame)
+footer.Size = UDim2.new(1, 0, 0, 30)
+footer.Position = UDim2.fromOffset(0, 232)
+footer.BackgroundTransparency = 1
+footer.Text = "Made by BONA"
+footer.TextColor3 = Color3.fromRGB(110, 110, 150)
+footer.Font = Enum.Font.Gotham
+footer.TextSize = 12
+
+-- Notifications
+local notifHolder = Instance.new("Frame", gui)
+notifHolder.Size = UDim2.fromOffset(280, 400)
+notifHolder.Position = UDim2.new(1, -295, 1, -415)
+notifHolder.BackgroundTransparency = 1
+local layout = Instance.new("UIListLayout", notifHolder)
+layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+layout.Padding = UDim.new(0, 8)
+
+local function notify(text, sub2)
+    local n = Instance.new("Frame", notifHolder)
+    n.Size = UDim2.fromOffset(280, 64)
+    n.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+    n.BackgroundTransparency = 1
+    Instance.new("UICorner", n).CornerRadius = UDim.new(0, 12)
+    local s = Instance.new("UIStroke", n)
+    s.Color = Color3.fromRGB(0, 200, 110)
+    s.Thickness = 1.5
+    s.Transparency = 1
+
+    local icon = Instance.new("ImageLabel", n)
+    icon.Size = UDim2.fromOffset(40, 40)
+    icon.Position = UDim2.fromOffset(12, 12)
+    icon.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    icon.Image = pfp.Image
+    icon.ImageTransparency = 1
+    Instance.new("UICorner", icon).CornerRadius = UDim.new(1, 0)
+
+    local t1 = Instance.new("TextLabel", n)
+    t1.Size = UDim2.new(1, -66, 0, 24)
+    t1.Position = UDim2.fromOffset(60, 10)
+    t1.BackgroundTransparency = 1
+    t1.Text = text
+    t1.TextColor3 = Color3.new(1, 1, 1)
+    t1.Font = Enum.Font.GothamBold
+    t1.TextSize = 14
+    t1.TextXAlignment = Enum.TextXAlignment.Left
+    t1.TextTransparency = 1
+
+    local t2 = Instance.new("TextLabel", n)
+    t2.Size = UDim2.new(1, -66, 0, 20)
+    t2.Position = UDim2.fromOffset(60, 34)
+    t2.BackgroundTransparency = 1
+    t2.Text = sub2
+    t2.TextColor3 = Color3.fromRGB(0, 220, 120)
+    t2.Font = Enum.Font.Gotham
+    t2.TextSize = 12
+    t2.TextXAlignment = Enum.TextXAlignment.Left
+    t2.TextTransparency = 1
+
+    local ti = TweenInfo.new(0.3)
+    TweenService:Create(n, ti, {BackgroundTransparency = 0}):Play()
+    TweenService:Create(s, ti, {Transparency = 0}):Play()
+    TweenService:Create(icon, ti, {ImageTransparency = 0}):Play()
+    TweenService:Create(t1, ti, {TextTransparency = 0}):Play()
+    TweenService:Create(t2, ti, {TextTransparency = 0}):Play()
+
+    task.delay(3, function()
+        local out = TweenInfo.new(0.4)
+        TweenService:Create(n, out, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(s, out, {Transparency = 1}):Play()
+        TweenService:Create(icon, out, {ImageTransparency = 1}):Play()
+        TweenService:Create(t1, out, {TextTransparency = 1}):Play()
+        TweenService:Create(t2, out, {TextTransparency = 1}):Play()
+        task.wait(0.45)
+        n:Destroy()
+    end)
+end
+
+-- Logic
+local function refresh()
+    gemBtn.BackgroundColor3 = selected == "Gem" and Color3.fromRGB(80, 80, 255) or Color3.fromRGB(45, 45, 60)
+    beliBtn.BackgroundColor3 = selected == "Beli" and Color3.fromRGB(80, 80, 255) or Color3.fromRGB(45, 45, 60)
+    local v = data:FindFirstChild(selected)
+    if v then box.Text = tostring(v.Value) end
+end
+
+gemBtn.MouseButton1Click:Connect(function() selected = "Gem" refresh() end)
+beliBtn.MouseButton1Click:Connect(function() selected = "Beli" refresh() end)
+
+run.MouseButton1Click:Connect(function()
+    local n = tonumber(box.Text)
+    local v = data:FindFirstChild(selected)
+    if n and v then
+        v.Value = n
+        notify(selected .. " Bypass", "✔ Bypassed " .. selected .. " → " .. tostring(n))
+    else
+        notify("Error", "Enter a valid number")
+    end
+end)
+
+refresh()
+notify("Fake Value", "Loaded successfully")
