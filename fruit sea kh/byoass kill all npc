@@ -1,0 +1,222 @@
+--==================================================
+-- BONA ATTACK NOTIFICATION
+--==================================================
+
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+
+--==================================================
+-- CONFIGURATION
+--==================================================
+
+local CONFIG = {
+    HubName = "BONA",
+    ProfileUserId = 6207052436,
+    Duration = 4,
+    Delay = 2
+}
+
+--==================================================
+-- PROFILE IMAGE
+--==================================================
+
+local ProfileImage = Players:GetUserThumbnailAsync(
+    CONFIG.ProfileUserId,
+    Enum.ThumbnailType.HeadShot,
+    Enum.ThumbnailSize.Size150x150
+)
+
+--==================================================
+-- NOTIFICATION FUNCTION
+--==================================================
+
+local function Notify(title, message)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = message,
+            Icon = ProfileImage,
+            Duration = CONFIG.Duration
+        })
+    end)
+end
+
+--==================================================
+-- BONA NOTIFICATIONS
+--==================================================
+
+Notify("BONA", "Attack system initialized.")
+task.wait(CONFIG.Delay)
+
+Notify("BONA SYSTEM", "Scanning NPCs...")
+task.wait(CONFIG.Delay)
+
+Notify("BONA BYPASS", "Bypass system activated.")
+task.wait(CONFIG.Delay)
+
+Notify("BONA ATTACK", "All NPC targets detected.")
+task.wait(CONFIG.Delay)
+
+Notify("BONA SYSTEM", "NPC attack process completed.")
+
+--==================================================
+-- END
+-- Runs once. No loop.
+--==================
+
+--[[
+    NPC Mass Attack Script
+    Bypass distance check dengan langsung trigger damage function
+    Support: Multiple NPC targeting
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Konfigurasi
+local CONFIG = {
+    AttackRange = math.huge, -- Unlimited range
+    Damage = 999999, -- Damage per hit
+    AttackInterval = 0.1, -- Detik antar serangan
+    TargetAllNPCs = true, -- Serang semua NPC di map
+    UseRemoteBypass = true, -- Bypass pake remote events
+    UseDirectDamage = true, -- Direct damage ke Humanoid
+}
+
+-- Fungsi buat dapetin semua NPC
+local function GetAllNPCs()
+    local npcs = {}
+    
+    -- Cari di Workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+            local humanoid = obj:FindFirstChild("Humanoid")
+            local rootPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+            
+            -- Filter NPC (bukan player)
+            if humanoid and rootPart and not Players:GetPlayerFromCharacter(obj) then
+                table.insert(npcs, {
+                    Model = obj,
+                    Humanoid = humanoid,
+                    RootPart = rootPart
+                })
+            end
+        end
+    end
+    
+    return npcs
+end
+
+-- Fungsi attack dengan remote bypass
+local function AttackWithRemote(npc)
+    local humanoid = npc.Humanoid
+    local rootPart = npc.RootPart
+    
+    -- Coba cari remote events yang umum
+    local remotes = {}
+    
+    -- Cari di ReplicatedStorage
+    if game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") then
+        for _, remote in pairs(game:GetService("ReplicatedStorage").Remotes:GetDescendants()) do
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                table.insert(remotes, remote)
+            end
+        end
+    end
+    
+    -- Cari di game.ReplicatedStorage langsung
+    for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+            table.insert(remotes, remote)
+        end
+    end
+    
+    -- Coba fire remotes dengan berbagai argumen
+    for _, remote in pairs(remotes) do
+        pcall(function()
+            -- Coba berbagai format argumen
+            remote:FireServer("Damage", npc.Model, CONFIG.Damage)
+            remote:FireServer("Hit", npc.Model, CONFIG.Damage)
+            remote:FireServer("Attack", npc.Model, CONFIG.Damage)
+            remote:FireServer(npc.Model, CONFIG.Damage)
+            remote:FireServer("Kill", npc.Model)
+            remote:FireServer("TakeDamage", npc.Model, CONFIG.Damage)
+        end)
+    end
+end
+
+-- Fungsi direct damage (bypass remote)
+local function DirectDamage(npc)
+    local humanoid = npc.Humanoid
+    
+    pcall(function()
+        -- Direct damage ke Humanoid
+        humanoid:TakeDamage(CONFIG.Damage)
+        humanoid.Health = 0
+        
+        -- Force break joints
+        if npc.Model:FindFirstChild("HumanoidRootPart") then
+            npc.Model.HumanoidRootPart:BreakJoints()
+        end
+        
+        -- Remove all body parts
+        for _, part in pairs(npc.Model:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part:Destroy()
+            end
+        end
+    end)
+end
+
+-- Fungsi teleport ke NPC (buat bypass distance check)
+local function TeleportToNPC(npc)
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Teleport ke NPC
+    humanoidRootPart.CFrame = npc.RootPart.CFrame + Vector3.new(0, 3, 0)
+end
+
+-- Main attack loop
+local function AttackLoop()
+    while true do
+        local npcs = GetAllNPCs()
+        
+        for _, npc in pairs(npcs) do
+            if npc.Humanoid and npc.Humanoid.Health > 0 then
+                -- Bypass distance check
+                if CONFIG.UseRemoteBypass then
+                    AttackWithRemote(npc)
+                end
+                
+                if CONFIG.UseDirectDamage then
+                    DirectDamage(npc)
+                end
+                
+                -- Optional: teleport ke NPC
+                if CONFIG.AttackRange == math.huge then
+                    -- No need to teleport, damage langsung
+                end
+            end
+        end
+        
+        wait(CONFIG.AttackInterval)
+    end
+end
+
+-- Auto respawn
+LocalPlayer.CharacterAdded:Connect(function(character)
+    wait(1)
+    -- Restart attack loop
+    spawn(AttackLoop)
+end)
+
+-- Start attack
+spawn(AttackLoop)
+
+print("NPC Mass Attack Script Loaded!")
+print("Targeting all NPCs with unlimited range...")
