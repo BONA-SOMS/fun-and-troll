@@ -1,0 +1,8 @@
+--autoclicker
+while wait() do
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Click"):FireServer()
+ end
+--autorebirth
+while wait() do
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Rebirth"):FireServer()
+end
