@@ -1,4 +1,31 @@
 --==================================================
+-- BONA NOTIFICATION
+--==================================================
+
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+
+local LocalPlayer = Players.LocalPlayer
+local PROFILE_ID = 6207052436
+
+-- Profile
+local ProfileImage = "rbxthumb://type=AvatarHeadShot&id="
+    .. PROFILE_ID .. "&w=150&h=150"
+
+-- Notification
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "BONA",
+        Text = "OK BOSS",
+        Icon = ProfileImage,
+        Duration = 5
+    })
+end)
+
+
+
+
+--==================================================
 -- BONA WEAPON LOOPS
 --==================================================
 
