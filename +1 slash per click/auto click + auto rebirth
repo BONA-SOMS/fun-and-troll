@@ -1,0 +1,11 @@
+--autorebirth
+while wait() do
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RebirthRequest"):FireServer()
+end
+--autoclick
+while wait() do
+local args = {
+	13
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SlashEvent"):FireServer(unpack(args))
+end
