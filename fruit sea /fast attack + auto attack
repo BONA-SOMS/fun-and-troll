@@ -1,20 +1,62 @@
-while wait() do #woodkatana
-game:GetService("Players").LocalPlayer.Character:WaitForChild("WoodKatana"):WaitForChild("WoodKatanaRemote"):FireServer()
-end
+--==================================================
+-- BONA WEAPON LOOPS
+--==================================================
 
-while wait() do #katana
-game:GetService("Players").LocalPlayer.Character:WaitForChild("Katana"):WaitForChild("KatanaRemote"):FireServer()
-end
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-while wait() do #darkblade
-game:GetService("Players").LocalPlayer.Character:WaitForChild("DarkBlade"):WaitForChild("DarkBladeRemote"):FireServer()
-end
+-- WOOD KATANA
+task.spawn(function()
+    while task.wait() do
+        local Character = LocalPlayer.Character
+        if Character then
+            local Weapon = Character:WaitForChild("WoodKatana")
+            Weapon:WaitForChild("WoodKatanaRemote"):FireServer()
+        end
+    end
+end)
 
-while wait() do #flammingdagger
-game:GetService("Players").LocalPlayer.Character:WaitForChild("FlamingDagger"):WaitForChild("FlamingDaggerRemote"):FireServer()
-end
+-- KATANA
+task.spawn(function()
+    while task.wait() do
+        local Character = LocalPlayer.Character
+        if Character then
+            local Weapon = Character:WaitForChild("Katana")
+            Weapon:WaitForChild("KatanaRemote"):FireServer()
+        end
+    end
+end)
 
-#melee
-while wait() do #fist
-game:GetService("Players").LocalPlayer:WaitForChild("Backpack"):WaitForChild("Fist"):WaitForChild("FistRemote"):FireServer()
-end
+-- DARK BLADE
+task.spawn(function()
+    while task.wait() do
+        local Character = LocalPlayer.Character
+        if Character then
+            local Weapon = Character:WaitForChild("DarkBlade")
+            Weapon:WaitForChild("DarkBladeRemote"):FireServer()
+        end
+    end
+end)
+
+-- FLAMING DAGGER
+task.spawn(function()
+    while task.wait() do
+        local Character = LocalPlayer.Character
+        if Character then
+            local Weapon = Character:WaitForChild("FlamingDagger")
+            Weapon:WaitForChild("FlamingDaggerRemote"):FireServer()
+        end
+    end
+end)
+
+-- MELEE / FIST
+task.spawn(function()
+    while task.wait() do
+        local Backpack = LocalPlayer:WaitForChild("Backpack")
+        local Fist = Backpack:FindFirstChild("Fist")
+
+        if Fist then
+            Fist:WaitForChild("FistRemote"):FireServer()
+        end
+    end
+end)
