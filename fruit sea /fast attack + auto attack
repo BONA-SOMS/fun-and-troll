@@ -1,0 +1,20 @@
+while wait() do #woodkatana
+game:GetService("Players").LocalPlayer.Character:WaitForChild("WoodKatana"):WaitForChild("WoodKatanaRemote"):FireServer()
+end
+
+while wait() do #katana
+game:GetService("Players").LocalPlayer.Character:WaitForChild("Katana"):WaitForChild("KatanaRemote"):FireServer()
+end
+
+while wait() do #darkblade
+game:GetService("Players").LocalPlayer.Character:WaitForChild("DarkBlade"):WaitForChild("DarkBladeRemote"):FireServer()
+end
+
+while wait() do #flammingdagger
+game:GetService("Players").LocalPlayer.Character:WaitForChild("FlamingDagger"):WaitForChild("FlamingDaggerRemote"):FireServer()
+end
+
+#melee
+while wait() do #fist
+game:GetService("Players").LocalPlayer:WaitForChild("Backpack"):WaitForChild("Fist"):WaitForChild("FistRemote"):FireServer()
+end
