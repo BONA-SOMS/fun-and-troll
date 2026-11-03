@@ -1,0 +1,10 @@
+--BONA
+--normalyouneedtobuybutthisscripthelpyougetforfree
+
+local args = {
+    [1] = "God's Hand"
+}
+
+game:GetService("ReplicatedStorage").EquipSlapEvent:FireServer(unpack(args))
+
+game:GetService("ReplicatedStorage").EquipSlapEvent:FireServer(unpack(args)) -- game: https://www.roblox.com/games/128829279907343/unnamed 
