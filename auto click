@@ -1,0 +1,618 @@
+--// SUPER AUTO CLICKER - Mario style (LocalScript / executor)
+--// Features: delay in MS or SEC (min 10 ms), number of clicks (0 = forever),
+--// draggable triggers (numbers or words), mouse + triggers work at the same time.
+--// Hotkey: F6 = start / stop
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
+local lp = Players.LocalPlayer
+local cam = workspace.CurrentCamera
+
+local MIN_MS = 10          -- minimum delay allowed (milliseconds)
+local MAX_TRIGGERS = 30    -- how many triggers you can add
+
+local COL = {
+	sky = Color3.fromRGB(92, 148, 252),
+	red = Color3.fromRGB(229, 37, 33),
+	blue = Color3.fromRGB(44, 90, 200),
+	coin = Color3.fromRGB(251, 208, 0),
+	green = Color3.fromRGB(0, 168, 0),
+	brick = Color3.fromRGB(184, 92, 40),
+	dark = Color3.fromRGB(30, 20, 10),
+	white = Color3.fromRGB(255, 255, 255),
+	gray = Color3.fromRGB(120, 120, 130),
+}
+
+-- parent
+local parent
+pcall(function() parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+if not parent then parent = lp:WaitForChild("PlayerGui") end
+local old = parent:FindFirstChild("MarioAutoClicker")
+if old then old:Destroy() end
+
+-- helpers
+local function make(class, props, par)
+	local o = Instance.new(class)
+	for k, v in pairs(props) do o[k] = v end
+	o.Parent = par
+	return o
+end
+local function corner(o, r) return make("UICorner", { CornerRadius = UDim.new(0, r) }, o) end
+local function stroke(o, c, t)
+	return make("UIStroke", { Color = c or COL.dark, Thickness = t or 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, o)
+end
+local function label(par, text, x, y, w, h, size, color)
+	return make("TextLabel", {
+		Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h),
+		BackgroundTransparency = 1, Text = text, Font = Enum.Font.Arcade,
+		TextSize = size or 14, TextColor3 = color or COL.white,
+		TextStrokeTransparency = 0, TextXAlignment = Enum.TextXAlignment.Left,
+	}, par)
+end
+local function button(par, text, x, y, w, h, color)
+	local b = make("TextButton", {
+		Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h),
+		BackgroundColor3 = color, Text = text, Font = Enum.Font.Arcade,
+		TextSize = 14, TextColor3 = COL.white, TextStrokeTransparency = 0,
+		AutoButtonColor = true,
+	}, par)
+	corner(b, 6); stroke(b, COL.dark, 2)
+	return b
+end
+local function box(par, text, x, y, w, h)
+	local b = make("TextBox", {
+		Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h),
+		BackgroundColor3 = COL.white, Text = text, Font = Enum.Font.Arcade,
+		TextSize = 14, TextColor3 = COL.dark, ClearTextOnFocus = false,
+	}, par)
+	corner(b, 6); stroke(b, COL.dark, 2)
+	return b
+end
+
+-- drag helper (mouse + touch). returns list of connections
+local function makeDraggable(handle, target, onMoved)
+	local dragging, startPos, origin = false, nil, nil
+	local conns = {}
+	table.insert(conns, handle.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			startPos = i.Position
+			origin = target.Position
+			i.Changed:Connect(function()
+				if i.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end
+	end))
+	table.insert(conns, UIS.InputChanged:Connect(function(i)
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+			local d = i.Position - startPos
+			target.Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X, origin.Y.Scale, origin.Y.Offset + d.Y)
+			if onMoved then onMoved() end
+		end
+	end))
+	return conns
+end
+
+-- GUI root
+local gui = make("ScreenGui", {
+	Name = "MarioAutoClicker", ResetOnSpawn = false, IgnoreGuiInset = true,
+	DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}, parent)
+
+local layer = make("Frame", { -- holds the trigger markers
+	Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Active = false,
+}, gui)
+
+local H = math.min(424, cam.ViewportSize.Y - 30)
+local main = make("Frame", {
+	Size = UDim2.fromOffset(290, H), Position = UDim2.new(0, 20, 0.5, -H / 2),
+	BackgroundColor3 = COL.sky, ZIndex = 100,
+}, gui)
+corner(main, 10); stroke(main, COL.dark, 3)
+
+-- title bar
+local title = make("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = COL.red, ZIndex = 101 }, main)
+corner(title, 10); stroke(title, COL.dark, 3)
+local tl = label(title, "SUPER AUTO CLICKER", 10, 0, 172, 36, 13, COL.white)
+tl.ZIndex = 102
+local minBtn = button(title, "-", 226, 5, 26, 26, COL.coin); minBtn.TextColor3 = COL.dark; minBtn.ZIndex = 102
+local closeBtn = button(title, "X", 256, 5, 26, 26, COL.blue); closeBtn.ZIndex = 102
+makeDraggable(title, main)
+local calBtn = button(title, "CAL", 184, 5, 38, 26, COL.green); calBtn.TextSize = 11; calBtn.ZIndex = 102
+
+local body = make("ScrollingFrame", {
+	Position = UDim2.fromOffset(0, 40), Size = UDim2.fromOffset(290, H - 54),
+	BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 101,
+	ScrollBarThickness = 4, ScrollBarImageColor3 = COL.dark,
+	CanvasSize = UDim2.fromOffset(0, 412), ScrollingDirection = Enum.ScrollingDirection.Y,
+}, main)
+
+-- delay row
+label(body, "DELAY", 10, 8, 80, 28, 14)
+local delayBox = box(body, "100", 90, 8, 100, 28)
+local unitBtn = button(body, "MS", 198, 8, 82, 28, COL.blue)
+label(body, "MIN 10 MS  (0.01 SEC)", 10, 40, 270, 14, 11, COL.white)
+
+-- clicks row
+label(body, "TIMES", 10, 62, 80, 28, 14)
+local clicksBox = box(body, "0", 90, 62, 100, 28)
+label(body, "0 = FOREVER", 198, 62, 90, 28, 11)
+
+-- mode toggles
+local mouseBtn = button(body, "MOUSE: OFF", 10, 100, 86, 28, COL.gray)
+local trigBtn = button(body, "TRIG: ON", 102, 100, 86, 28, COL.green)
+local keysBtn = button(body, "KEYS: OFF", 194, 100, 86, 28, COL.gray)
+mouseBtn.TextSize = 11; trigBtn.TextSize = 11; keysBtn.TextSize = 11
+
+-- trigger header
+local countLbl = label(body, "TRIGGERS 0/" .. MAX_TRIGGERS, 10, 138, 130, 24, 12)
+local addBtn = button(body, "+ ADD", 146, 136, 70, 26, COL.green)
+local clearBtn = button(body, "CLEAR", 220, 136, 60, 26, COL.red)
+local keysBox = box(body, "", 10, 168, 206, 28)
+keysBox.PlaceholderText = "KEYS: 1,2,hello,[Enter]"
+keysBox.TextSize = 12
+local enterBtn = button(body, "ENTER", 222, 168, 58, 28, COL.green)
+enterBtn.TextSize = 11
+
+local list = make("ScrollingFrame", {
+	Position = UDim2.fromOffset(10, 202), Size = UDim2.fromOffset(270, 124),
+	BackgroundColor3 = COL.brick, BorderSizePixel = 0, ScrollBarThickness = 5,
+	CanvasSize = UDim2.fromOffset(0, 0), ZIndex = 102,
+}, body)
+corner(list, 6); stroke(list, COL.dark, 2)
+make("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4) }, list)
+local layout = make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	list.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 8)
+end)
+
+local startBtn = button(body, "START", 10, 334, 270, 40, COL.green)
+startBtn.TextSize = 20
+local status = label(body, "READY  |  F6 = START/STOP", 10, 380, 270, 18, 11)
+
+-- brick ground
+local ground = make("Frame", { Position = UDim2.new(0, 0, 1, -14), Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1, ZIndex = 101, ClipsDescendants = true }, main)
+for i = 0, 14 do
+	local b = make("Frame", { Position = UDim2.fromOffset(i * 20 - 2, 0), Size = UDim2.fromOffset(20, 14), BackgroundColor3 = COL.brick, ZIndex = 101 }, ground)
+	stroke(b, COL.dark, 1)
+end
+
+-- state
+local running = false
+local unitSec = false
+local useMouse, useTriggers, useKeys, pressEnter = false, true, false, true
+local triggers = {}
+local done = 0
+
+local function setStatus(t) status.Text = t end
+
+local function toggleStyle(btn, on, name)
+	btn.Text = name .. (on and ": ON" or ": OFF")
+	btn.BackgroundColor3 = on and COL.green or COL.gray
+end
+
+local function clampDelay()
+	local v = tonumber(delayBox.Text) or 100
+	local ms = unitSec and v * 1000 or v
+	if ms < MIN_MS then
+		ms = MIN_MS
+		v = unitSec and ms / 1000 or ms
+	end
+	delayBox.Text = tostring(v)
+	return ms / 1000
+end
+
+local function getMaxClicks()
+	local n = math.floor(tonumber(clicksBox.Text) or 0)
+	if n < 0 then n = 0 end
+	clicksBox.Text = tostring(n)
+	return n
+end
+
+local offX, offY = 0, 0 -- calibration offset (use the CAL button)
+local sendTouch = false
+local function clickAt(x, y)
+	x += offX; y += offY
+	if sendTouch then
+		pcall(function() VIM:SendTouchEvent(1, 0, x, y) end)
+		task.wait()
+		pcall(function() VIM:SendTouchEvent(1, 2, x, y) end)
+	else
+		VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+		task.wait()
+		VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+	end
+end
+
+local function setMarkersActive(active)
+	for _, t in ipairs(triggers) do t.marker.Active = active end
+end
+
+-- keyboard typing (numbers / words)
+local DIGITS = { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine" }
+local function keyFor(ch)
+	if ch:match("%d") then return Enum.KeyCode[DIGITS[tonumber(ch) + 1]] end
+	if ch:match("%a") then return Enum.KeyCode[ch:upper()] end
+	if ch == " " then return Enum.KeyCode.Space end
+	if ch == "." then return Enum.KeyCode.Period end
+	if ch == "-" then return Enum.KeyCode.Minus end
+end
+local function tapKey(k, shift)
+	if shift then VIM:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game) end
+	VIM:SendKeyEvent(true, k, false, game)
+	task.wait()
+	VIM:SendKeyEvent(false, k, false, game)
+	if shift then VIM:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game) end
+end
+local function typeEntry(entry)
+	local named = entry:match("^%[(.+)%]$") -- [Enter], [Space], [F1] ...
+	if named then
+		local ok, k = pcall(function() return Enum.KeyCode[named] end)
+		if ok and k then tapKey(k) end
+		return
+	end
+	for ch in entry:gmatch(".") do
+		local k = keyFor(ch)
+		if k then tapKey(k, ch:match("%u") ~= nil); task.wait(0.02) end
+	end
+	if pressEnter then tapKey(Enum.KeyCode.Return) end
+end
+local function parseKeys()
+	local out = {}
+	for part in keysBox.Text:gmatch("[^,]+") do
+		part = part:match("^%s*(.-)%s*$")
+		if part ~= "" then table.insert(out, part) end
+	end
+	return out
+end
+
+-- trigger creation
+local editor, curT, refreshEditor
+
+local function refreshCount()
+	countLbl.Text = "TRIGGERS " .. #triggers .. "/" .. MAX_TRIGGERS
+end
+
+local function removeTrigger(t)
+	for i, v in ipairs(triggers) do
+		if v == t then table.remove(triggers, i) break end
+	end
+	for _, c in ipairs(t.conns) do c:Disconnect() end
+	if curT == t and editor then editor.Visible = false; curT = nil end
+	t.marker:Destroy(); t.row:Destroy()
+	refreshCount()
+end
+
+local serial = 0
+local DEFAULT_SIZE = 26
+local edName, edSize, edOn
+
+local function applySize(t, n)
+	n = math.clamp(math.floor(tonumber(n) or DEFAULT_SIZE), 12, 90)
+	t.size = n
+	t.marker.Size = UDim2.fromOffset(n, n)
+	return n
+end
+local function applyName(t, txt)
+	if txt == nil or txt == "" then txt = t.defaultName end
+	t.name = txt
+	t.tag.Text = " " .. txt .. " "
+	t.nameBox.Text = txt
+	if curT == t and edName then edName.Text = txt end
+end
+local function applyEnabled(t, on)
+	t.enabled = on
+	t.onBtn.Text = on and "ON" or "OFF"
+	t.onBtn.BackgroundColor3 = on and COL.green or COL.gray
+	t.marker.BackgroundTransparency = on and 0.1 or 0.7
+	if curT == t then refreshEditor() end
+end
+
+-- small editor window (opens when you tap a trigger or its SET button)
+editor = make("Frame", { Size = UDim2.fromOffset(200, 130), BackgroundColor3 = COL.sky, Visible = false, ZIndex = 200 }, gui)
+corner(editor, 8); stroke(editor, COL.dark, 3)
+local edHead = make("Frame", { Size = UDim2.new(1, 0, 0, 26), BackgroundColor3 = COL.red, ZIndex = 201 }, editor)
+corner(edHead, 8); stroke(edHead, COL.dark, 2)
+label(edHead, "SET TRIGGER", 8, 0, 130, 26, 12).ZIndex = 202
+local edClose = button(edHead, "X", 170, 2, 24, 22, COL.blue); edClose.ZIndex = 202
+makeDraggable(edHead, editor)
+label(editor, "NAME", 8, 32, 50, 24, 11)
+edName = box(editor, "", 58, 32, 134, 24)
+label(editor, "SIZE", 8, 62, 50, 24, 11)
+local edMinus = button(editor, "-", 58, 62, 28, 24, COL.blue)
+edSize = box(editor, "26", 90, 62, 62, 24)
+local edPlus = button(editor, "+", 156, 62, 36, 24, COL.blue)
+edOn = button(editor, "ON", 8, 94, 90, 26, COL.green)
+local edDel = button(editor, "DELETE", 102, 94, 90, 26, COL.red)
+
+refreshEditor = function()
+	if not curT then return end
+	edName.Text = curT.name
+	edSize.Text = tostring(curT.size)
+	edOn.Text = curT.enabled and "ON" or "OFF"
+	edOn.BackgroundColor3 = curT.enabled and COL.green or COL.gray
+end
+local function openEditor(t)
+	if running then return end
+	curT = t
+	refreshEditor()
+	local c = t.marker.AbsolutePosition + t.marker.AbsoluteSize / 2
+	local vp = cam.ViewportSize
+	local x = c.X + t.size / 2 + 10
+	if x > vp.X - 204 then x = c.X - t.size / 2 - 210 end
+	x = math.clamp(x, 4, math.max(4, vp.X - 204))
+	local y = math.clamp(c.Y - 65, 4, math.max(4, vp.Y - 134))
+	editor.Position = UDim2.fromOffset(x, y)
+	editor.Visible = true
+end
+edClose.MouseButton1Click:Connect(function() editor.Visible = false end)
+edName.FocusLost:Connect(function() if curT then applyName(curT, edName.Text) end end)
+edSize.FocusLost:Connect(function() if curT then edSize.Text = tostring(applySize(curT, edSize.Text)) end end)
+edMinus.MouseButton1Click:Connect(function() if curT then edSize.Text = tostring(applySize(curT, curT.size - 2)) end end)
+edPlus.MouseButton1Click:Connect(function() if curT then edSize.Text = tostring(applySize(curT, curT.size + 2)) end end)
+edOn.MouseButton1Click:Connect(function() if curT then applyEnabled(curT, not curT.enabled) end end)
+edDel.MouseButton1Click:Connect(function() if curT then removeTrigger(curT) end end)
+
+local function addTrigger(nameOverride)
+	if #triggers >= MAX_TRIGGERS then setStatus("MAX TRIGGERS REACHED") return end
+	serial += 1
+	local idx = #triggers + 1
+	local t = { defaultName = tostring(idx), enabled = true, conns = {}, size = DEFAULT_SIZE }
+	local vp = cam.ViewportSize
+
+	local marker = make("Frame", {
+		Size = UDim2.fromOffset(DEFAULT_SIZE, DEFAULT_SIZE), AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(vp.X / 2 + ((idx - 1) % 8) * 36 - 126, vp.Y / 2 + math.floor((idx - 1) / 8) * 36),
+		BackgroundColor3 = COL.coin, BackgroundTransparency = 0.1, Active = not running, ZIndex = 50,
+	}, layer)
+	make("UICorner", { CornerRadius = UDim.new(0.5, 0) }, marker)
+	stroke(marker, COL.dark, 2)
+	local dot = make("Frame", { Size = UDim2.fromOffset(4, 4), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), BackgroundColor3 = COL.dark, ZIndex = 51 }, marker)
+	make("UICorner", { CornerRadius = UDim.new(0.5, 0) }, dot)
+	local tag = make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -3), AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0), BackgroundColor3 = COL.dark, BackgroundTransparency = 0.25,
+		Font = Enum.Font.Arcade, TextSize = 11, TextColor3 = COL.white, Text = "", ZIndex = 52,
+	}, marker)
+	corner(tag, 3)
+	t.marker, t.tag = marker, tag
+
+	-- drag to move, tap (no movement) to open the editor
+	for _, c in ipairs(makeDraggable(marker, marker)) do table.insert(t.conns, c) end
+	table.insert(t.conns, marker.InputBegan:Connect(function(i)
+		if running then return end
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+			local start = i.Position
+			i.Changed:Connect(function()
+				if i.UserInputState == Enum.UserInputState.End and (i.Position - start).Magnitude < 8 then
+					openEditor(t)
+				end
+			end)
+		end
+	end))
+
+	local row = make("Frame", { Size = UDim2.new(1, -4, 0, 28), BackgroundColor3 = COL.white, LayoutOrder = serial, ZIndex = 103 }, list)
+	corner(row, 5); stroke(row, COL.dark, 2)
+	t.nameBox = box(row, "", 3, 2, 94, 24); t.nameBox.ZIndex = 104
+	local setBtn = button(row, "SET", 101, 2, 48, 24, COL.blue); setBtn.ZIndex = 104
+	t.onBtn = button(row, "ON", 153, 2, 46, 24, COL.green); t.onBtn.ZIndex = 104
+	local delBtn = button(row, "X", 203, 2, 44, 24, COL.red); delBtn.ZIndex = 104
+	t.row = row
+
+	applyName(t, nameOverride)
+	t.nameBox.FocusLost:Connect(function() applyName(t, t.nameBox.Text) end)
+	setBtn.MouseButton1Click:Connect(function() openEditor(t) end)
+	t.onBtn.MouseButton1Click:Connect(function() applyEnabled(t, not t.enabled) end)
+	delBtn.MouseButton1Click:Connect(function() removeTrigger(t) end)
+
+	table.insert(triggers, t)
+	refreshCount()
+end
+
+-- calibration window (fixes "click is not on the trigger")
+local function ping(x, y, color)
+	local f = make("Frame", {
+		Size = UDim2.fromOffset(22, 22), AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(x, y), BackgroundTransparency = 1, ZIndex = 300,
+	}, gui)
+	corner(f, 11); stroke(f, color, 3)
+	task.delay(1.5, function() f:Destroy() end)
+end
+
+local calWin = make("Frame", { Size = UDim2.fromOffset(210, 168), BackgroundColor3 = COL.sky, Visible = false, ZIndex = 200 }, gui)
+corner(calWin, 8); stroke(calWin, COL.dark, 3)
+local calHead = make("Frame", { Size = UDim2.new(1, 0, 0, 26), BackgroundColor3 = COL.red, ZIndex = 201 }, calWin)
+corner(calHead, 8); stroke(calHead, COL.dark, 2)
+label(calHead, "CALIBRATE", 8, 0, 130, 26, 12).ZIndex = 202
+local calClose = button(calHead, "X", 180, 2, 24, 22, COL.blue); calClose.ZIndex = 202
+makeDraggable(calHead, calWin)
+
+label(calWin, "X", 8, 32, 20, 24, 12)
+local xMinus = button(calWin, "-", 30, 32, 30, 24, COL.blue)
+local xBox = box(calWin, "0", 64, 32, 80, 24)
+local xPlus = button(calWin, "+", 148, 32, 30, 24, COL.blue)
+label(calWin, "Y", 8, 62, 20, 24, 12)
+local yMinus = button(calWin, "-", 30, 62, 30, 24, COL.blue)
+local yBox = box(calWin, "0", 64, 62, 80, 24)
+local yPlus = button(calWin, "+", 148, 62, 30, 24, COL.blue)
+local autoBtn = button(calWin, "AUTO", 8, 94, 62, 26, COL.green)
+local testBtn = button(calWin, "TEST", 74, 94, 62, 26, COL.coin); testBtn.TextColor3 = COL.dark
+local sendBtn = button(calWin, "MOUSE", 140, 94, 62, 26, COL.blue)
+local calInfo = label(calWin, "YELLOW = TARGET, RED = REAL", 8, 124, 196, 36, 10)
+calInfo.TextWrapped = true; calInfo.TextYAlignment = Enum.TextYAlignment.Top
+
+local function syncCal()
+	xBox.Text = tostring(offX); yBox.Text = tostring(offY)
+end
+xBox.FocusLost:Connect(function() offX = tonumber(xBox.Text) or 0; syncCal() end)
+yBox.FocusLost:Connect(function() offY = tonumber(yBox.Text) or 0; syncCal() end)
+xMinus.MouseButton1Click:Connect(function() offX -= 2; syncCal() end)
+xPlus.MouseButton1Click:Connect(function() offX += 2; syncCal() end)
+yMinus.MouseButton1Click:Connect(function() offY -= 2; syncCal() end)
+yPlus.MouseButton1Click:Connect(function() offY += 2; syncCal() end)
+sendBtn.MouseButton1Click:Connect(function()
+	sendTouch = not sendTouch
+	sendBtn.Text = sendTouch and "TOUCH" or "MOUSE"
+	sendBtn.BackgroundColor3 = sendTouch and COL.red or COL.blue
+end)
+calClose.MouseButton1Click:Connect(function() calWin.Visible = false end)
+calBtn.MouseButton1Click:Connect(function()
+	local vp = cam.ViewportSize
+	calWin.Position = UDim2.fromOffset(math.clamp(vp.X / 2 - 105, 4, vp.X - 214), 40)
+	calWin.Visible = not calWin.Visible
+end)
+
+local function calTarget()
+	local t1 = triggers[1]
+	if t1 and t1.marker.Parent then
+		return t1.marker.AbsolutePosition + t1.marker.AbsoluteSize / 2
+	end
+	return cam.ViewportSize / 2
+end
+-- moves the real mouse to the target and shows where it really went
+local function measure()
+	local tgt = calTarget()
+	VIM:SendMouseMoveEvent(tgt.X + offX, tgt.Y + offY, game)
+	task.wait(0.15)
+	local m = UIS:GetMouseLocation()
+	ping(tgt.X, tgt.Y, COL.coin)
+	ping(m.X, m.Y, COL.red)
+	return tgt, m
+end
+testBtn.MouseButton1Click:Connect(function()
+	local tgt, m = measure()
+	calInfo.Text = "OFF BY  X " .. math.floor(m.X - tgt.X + 0.5) .. "  Y " .. math.floor(m.Y - tgt.Y + 0.5)
+end)
+autoBtn.MouseButton1Click:Connect(function()
+	local tgt, m = measure()
+	offX = math.floor(offX + (tgt.X - m.X) + 0.5)
+	offY = math.floor(offY + (tgt.Y - m.Y) + 0.5)
+	syncCal()
+	calInfo.Text = "AUTO SET X " .. offX .. "  Y " .. offY .. "  (PRESS TEST TO CHECK)"
+end)
+
+-- start / stop
+local function stopClicking(msg)
+	running = false
+	startBtn.Text = "START"
+	startBtn.BackgroundColor3 = COL.green
+	setMarkersActive(true)
+	setStatus(msg or ("STOPPED  |  CLICKS: " .. done))
+end
+
+local function startClicking()
+	if running then return end
+	if not useMouse and not useTriggers and not useKeys then setStatus("TURN ON MOUSE, TRIG OR KEYS") return end
+	if useKeys and #parseKeys() == 0 and not useMouse and not useTriggers then setStatus("TYPE KEYS FIRST (1,2,hello)") return end
+	if useTriggers and not useMouse and not useKeys then
+		local any = false
+		for _, t in ipairs(triggers) do if t.enabled then any = true break end end
+		if not any then setStatus("ADD / ENABLE A TRIGGER FIRST") return end
+	end
+	local interval = clampDelay()
+	local keyList = parseKeys()
+	local maxClicks = getMaxClicks()
+	running = true
+	done = 0
+	editor.Visible = false
+	calWin.Visible = false
+	startBtn.Text = "STOP"
+	startBtn.BackgroundColor3 = COL.red
+	setMarkersActive(false) -- markers no longer block the click
+	task.spawn(function()
+		while running do
+			if useMouse then
+				local m = UIS:GetMouseLocation()
+				clickAt(m.X, m.Y)
+			end
+			if useTriggers then
+				for _, t in ipairs(triggers) do
+					if not running then break end
+					if t.enabled and t.marker.Parent then
+						local p = t.marker.AbsolutePosition + t.marker.AbsoluteSize / 2
+						clickAt(p.X, p.Y)
+						local m = t.marker
+						m.BackgroundColor3 = COL.red
+						task.delay(0.08, function() if m.Parent then m.BackgroundColor3 = COL.coin end end)
+					end
+				end
+			end
+			if useKeys then
+				for _, entry in ipairs(keyList) do
+					if not running then break end
+					typeEntry(entry)
+					task.wait(0.03)
+				end
+			end
+			done += 1
+			setStatus("RUNNING  |  CLICKS: " .. done .. (maxClicks > 0 and ("/" .. maxClicks) or ""))
+			if maxClicks > 0 and done >= maxClicks then
+				stopClicking("DONE  |  CLICKS: " .. done)
+				break
+			end
+			task.wait(interval)
+		end
+	end)
+end
+
+-- events
+addBtn.MouseButton1Click:Connect(function() addTrigger() end)
+clearBtn.MouseButton1Click:Connect(function()
+	for i = #triggers, 1, -1 do removeTrigger(triggers[i]) end
+end)
+startBtn.MouseButton1Click:Connect(function()
+	if running then stopClicking() else startClicking() end
+end)
+mouseBtn.MouseButton1Click:Connect(function()
+	useMouse = not useMouse
+	toggleStyle(mouseBtn, useMouse, "MOUSE")
+end)
+trigBtn.MouseButton1Click:Connect(function()
+	useTriggers = not useTriggers
+	toggleStyle(trigBtn, useTriggers, "TRIG")
+end)
+keysBtn.MouseButton1Click:Connect(function()
+	useKeys = not useKeys
+	toggleStyle(keysBtn, useKeys, "KEYS")
+end)
+enterBtn.MouseButton1Click:Connect(function()
+	pressEnter = not pressEnter
+	enterBtn.BackgroundColor3 = pressEnter and COL.green or COL.gray
+end)
+delayBox.FocusLost:Connect(clampDelay)
+clicksBox.FocusLost:Connect(getMaxClicks)
+unitBtn.MouseButton1Click:Connect(function()
+	local v = tonumber(delayBox.Text) or 100
+	unitSec = not unitSec
+	if unitSec then
+		delayBox.Text = tostring(v / 1000); unitBtn.Text = "SEC"
+	else
+		delayBox.Text = tostring(v * 1000); unitBtn.Text = "MS"
+	end
+	clampDelay()
+end)
+
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	body.Visible = not minimized
+	ground.Visible = not minimized
+	main.Size = minimized and UDim2.fromOffset(290, 36) or UDim2.fromOffset(290, H)
+end)
+
+local hotkeyConn = UIS.InputBegan:Connect(function(i, gp)
+	if gp then return end
+	if i.KeyCode == Enum.KeyCode.F6 then
+		if running then stopClicking() else startClicking() end
+	end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	running = false
+	hotkeyConn:Disconnect()
+	for _, t in ipairs(triggers) do for _, c in ipairs(t.conns) do c:Disconnect() end end
+	gui:Destroy()
+end)
+
+addTrigger() -- start with one trigger
