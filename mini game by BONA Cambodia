@@ -938,6 +938,121 @@ local SLEVELS = {
 	{ "eS! . .! . .", "| - . . .", "NE SW NW . .", ". . NE - sW!", "_ . . . ." },
 	{ "sS! . . . .", "| NW .! . .", "NE - SW . .", ".! . NE - SW", "_ . - . eN!" },
 	{ "eS! . . .", "| - .! .", "NE SW NW .", "_ NE - sW!" },
+	{ "eE! - SW .!", ". sE! NW ES", ". . NW -", "ES SW _ |" },
+	{ "sS! SW | SW", "NE SW NE ES", "NE | _ ES", "NW eN! NE SW" },
+	{ "ES - ES SW", "| eE! NW sN!", "_ - - .", ". . . ." },
+	{ "NE . NE _", "- - ES sW!", "SW ES | NE", "ES eE! NW NW" },
+	{ ". .! . _", "SW . SW .", ". - ES SW", "| eE! NW sN!" },
+	{ ". . eS! .!", "| NE NE SW", "_ NE sE! NW", "- SW NE -" },
+	{ ". eE! SW sS!", ". ES NE NW", "- . SW .", "_ - ES NW" },
+	{ ". - . .!", "sE! SW ES NE", "ES NW _ .", "NE eW! NW |" },
+	{ "ES sW! eS! .", "NE - NW .", ". . . NW", ". . NE _" },
+	{ ".! sS! . NE", "ES NW . .", "NE SW _ ES", "- eN! - NW" },
+	{ ". SW _ .", "NW eE! SW sS!", ".! ES NE NW", ". . SW ." },
+	{ "| - _ .", "| NE | ES", "NE sE! SW eS!", "- NE NE NW" },
+	{ ".! sE! SW -", "NE ES NW NW", "eE! NW .! NE", "| _ - ." },
+	{ "_ ES - SW", "- eN! sE! NW", ".! . .! SW", "ES NE NE -" },
+	{ "eE! - SW .", "ES ES NW .", "_ sN! .! .", "NW SW .! SW" },
+	{ ". _ . NE", ".! ES . SW", "sS! ES SW .", "NE NW eN! |" },
+	{ "_ . ES .", ". ES .! |", "ES SW eS! .!", "sN! NE NW ES" },
+	{ ". ES _ SW", ". ES SW NE", ". eN! NE sW!", ". . SW ." },
+	{ "ES eW! . ES", "| sS! NW .", "NE NW NW NE", ". _ - ." },
+	{ ". ES - eW!", "NE NE sW! .", "| _ . .", "NW . . .!" },
+	{ "| eE! - SW", ". .! ES NW", "_ - NE sW!", "| . .! ." },
+	{ ". . sS! .!", ". . NE SW", ". _ ES NW", "- . eN! .!" },
+	{ "sS! .! - _", "NE SW . SW", "ES NW NW |", "eN! . SW |" },
+	{ ". | _ .", ". sE! SW NW", ". ES NW NW", "NW eN! .! .!" },
+	{ "_ ES sW! SW", "ES NW .! .", "NE eW! SW .", ".! . - NE" },
+	{ "_ NE .! .", "SW eS! | -", ". | .! sS!", ".! NE - NW" },
+	{ "ES - eW! .", "NE SW ES |", "NW sN! .! .", "_ | NW .!" },
+	{ "eE! SW ES SW", ".! NE NW sN!", ".! SW .! NW", ". _ . -" },
+	{ ". .! | ES", ".! . _ sS!", "eE! SW ES NW", ". NE NW |" },
+	{ ".! .! - ES", "ES eW! . _", "NE SW . NW", ". NE sW! .!" },
+	{ "SW . . .", ". . eS! -", "_ ES NW sS!", "| NE - NW" },
+	{ "_ . .! |", ". .! .! .", "NE ES - eW!", "NW NE sW! ." },
+	{ ".! eS! _ |", "SW NE SW .", "| ES NW .!", "- sN! .! NW" },
+	{ "_ . .! .!", ". eS! . SW", "ES NW ES .", "NE sW! NE ." },
+	{ "ES .! NE NW", "_ NE - eS!", ". ES sW! |", ".! NE - NW" },
+	{ "SW SW .! .", "sE! SW . .", "ES NW . _", "NE eW! NW |" },
+	{ ". _ eS! .", ". ES NE SW", ".! .! ES NW", "SW .! NE sW!" },
+	{ "eS! NE sS! .!", "| ES NW SW", "NE NW SW _", "ES NW NW ." },
+	{ ". . NW _ NW", ".! .! eE! SW .", "SW SW . | |", "SW NE SW NE SW", "| - SW sE! NW" },
+	{ ". . | .! ES", "sS! ES - SW ES", "NE NW .! eN! .", "- SW . ES NE", "| ES _ | ES" },
+	{ ".! eS! ES SW sS!", "NE NE NW NE NW", ". SW . . -", "NE _ . . SW", ".! . .! NE ." },
+	{ "_ | NE NW .", "- . - ES -", "| . ES SW -", "NW eE! NW NE SW", ". SW ES sE! NW" },
+	{ "| . | - .", "sS! - . . .", "NE SW NW ES ES", "eS! | . _ .", "NE NW SW . .!" },
+	{ "SW . ES - sW!", "SW | NE SW .!", "| | ES NE eW!", "SW - NE .! .!", "NW _ . .! -" },
+	{ "- .! NW ES .!", "SW . SW - .!", "NE .! . _ SW", "ES eE! SW sE! SW", ". NW NE - NW" },
+	{ "NW .! SW | .", "eS! ES . ES SW", "NE - - NW sN!", "_ . . . NE", "- .! .! - ES" },
+	{ "ES SW sS! . NE", "| NE NW SW _", "| .! - | .", "| . | . .!", "eN! .! .! . NE" },
+	{ ".! . . . .", "| . NW sS! SW", "NW . ES NW NW", "NW . NE SW eS!", "_ . .! NE NW" },
+	{ ". NE eS! NE NE", ". NE | _ .", "ES - NW SW .", "NE sW! . NE .", "SW . SW NW ." },
+	{ "_ . . .! -", "SW | eE! SW .", ". . SW NE SW", "NE . - ES NW", ". .! NW sN! .!" },
+	{ "SW .! - .! |", "_ . eS! . .!", "SW .! NE SW ES", "SW NW . NE SW", ".! . . sE! NW" },
+	{ ".! . NW ES SW", ".! .! eE! NW |", "SW . . | |", "- SW _ . |", "| NE ES sE! NW" },
+	{ ". - sE! SW .", ". . SW NE SW", "- SW .! eE! NW", "SW NE NW _ .", "ES . . ES NW" },
+	{ "SW | eE! SW |", "ES _ ES NW ES", "NE ES NW . NE", "NW sN! - . SW", ". NE .! .! ES" },
+	{ "eS! ES SW . .", "NE NW | | NE", "NW ES NW - .", "SW sN! .! . |", "_ ES NW . ES" },
+	{ "ES SW SW NW .", "- . .! . .", "SW .! . ES SW", ". .! ES NW |", "_ . NE eW! sN!" },
+	{ "NW ES - SW _", ".! NE SW | -", "ES sE! NW eN! -", ". - NE .! .!", ". . . | .!" },
+	{ "NE .! . NW _", "- eS! ES SW .", "- NE NW | sS!", "| NE . NE NW", ".! NW SW NE ." },
+	{ "| ES . - |", ". . ES sS! SW", "eE! SW ES NW -", "_ NE NW SW ES", "NW . - .! SW" },
+	{ "ES - SW NE .", "NE SW eN! _ .", "ES NW SW NE .!", "| | NW | NE", "sN! | ES . ." },
+	{ ". | NW .! .", ".! NE NE eE! SW", ". _ - ES NW", ". . . | sS!", "SW NE .! NE NW" },
+	{ ".! sS! . _ .", "ES NW . . ES", "NE SW ES eW! NE", ".! NE NW . -", ". .! .! . -" },
+	{ ". ES SW _ sS!", "- eN! NE SW |", "NE - SW NE NW", ".! . . .! .", "NE SW NE .! ." },
+	{ "SW . . . .", ". _ | .! .", "NE ES SW NW .", ". eN! NE SW sS!", ". . .! NE NW" },
+	{ ". ES SW ES SW", "ES NW NE NW |", "sN! .! ES . eN!", ". .! .! SW -", "SW .! .! . _" },
+	{ "_ ES SW .! .", "ES NW | . .!", "NE SW eN! . .", "ES | . .! .", ". sN! . .! |" },
+	{ ".! NE .! .! NW", ". - .! | eS!", ". . . | |", "ES - SW ES NW", "NE sW! NE NW _" },
+	{ ". .! ES NE _", ". | ES SW ES", "NE ES NW NE SW", "ES eN! . | |", ". .! | sE! NW" },
+	{ ". | . . NE", ". .! . - NE", "NE sS! _ | .", "ES NW ES eW! SW", "NE - NW ES |" },
+	{ "sS! NE .! SW SW", "NE SW SW NW _", "ES NW .! . .", "NE SW .! .! .", "eE! NW .! . .!" },
+	{ ".! .! NW NE _", ". eS! .! . .", ".! NE SW . .", "sS! ES NW .! .", "NE NW NW . ." },
+	{ "eE! - SW .! -", "- ES NW . _", "ES NW - ES .", "sN! . . .! .", "ES . NE NW -" },
+	{ ". sE! - - SW", ". eS! ES - NW", ".! NE NW . .", ".! ES ES _ .", ". NW . . -" },
+	{ "NE sE! SW ES SW", "_ . NE NW |", "- - ES eS! |", ". . - NE NW", "| . .! NE ." },
+	{ "sS! ES SW eS! -", "NE NW NE NW .", "SW .! .! .! .!", ". .! NE SW .", "_ SW | .! .!" },
+	{ ". ES _ . -", ". . ES . NW", "ES eW! ES SW sS!", "| ES NW NE NW", "NE NW . ES ES" },
+	{ ". SW SW ES . .", "NE SW . . ES SW", "| . . NE | sN!", ". ES . . NE SW", ". . | NE eE! NW", ". _ . ES | |" },
+	{ "NW . . SW NE _", ".! .! NW . . .", ". . .! eE! SW NE", ".! SW SW . NE SW", "SW | .! ES sW! |", "NW NW ES NE - NW" },
+	{ "SW SW SW | . .!", "NE ES SW | NE |", "eE! NW NE SW SW ES", "ES sE! - NW . _", ".! ES - . .! NE", ". - .! NE - .!" },
+	{ "NE NE NW ES . _", ".! | .! ES SW .", ". eS! . NW ES SW", ".! NE - - NW |", ".! . . . . sN!", "| .! ES . .! .!" },
+	{ "NE . NW . SW -", "NE eS! . . | SW", ". NE SW - . |", ". | | ES SW NW", ". ES NE NW NE SW", "| | _ . | sN!" },
+	{ "- ES NE .! - sS!", "NE . . . ES NW", "ES NE NW . NE SW", ".! . _ | ES NW", ". . . NE NE SW", ". NW . . SW eN!" },
+	{ ".! ES ES | | NW", ". . sE! SW ES ES", "SW . ES NW . .", ".! | NE SW ES SW", ". | . NE NW eN!", ". SW SW _ . ." },
+	{ "| - sE! SW . .!", "- . ES NW . -", "- . NE SW eS! .!", "SW ES | NE NW .!", "- . _ . .! .", "| NE SW . . .!" },
+	{ ". NW eS! SW SW .!", ".! ES NW NW . .!", "ES NW _ | . |", "NE SW sS! .! .! ES", "| NE NW ES . .", ". - . | NE .!" },
+	{ "sE! - SW SW SW NW", ". ES NW _ NE ES", "ES NW SW SW NW NE", "NE SW - .! . SW", "eE! NW . ES | .", ". . . . SW NE" },
+	{ "ES . eE! SW .! SW", "NW .! ES NW .! ES", ". NE NE SW ES SW", ". _ . NE NW |", "- NW . . ES sN!", "NE - NE .! .! .!" },
+	{ ". .! NE .! - SW", ". | . . .! ES", ". .! - NE NW -", "NW .! . _ - .", "eE! SW ES SW ES SW", ".! NE NW NE NW sN!" },
+	{ "NE eS! ES . .! .!", "ES NW _ . . SW", "| NE | NE . .", "NE - SW . SW .", "- ES NW ES NW -", ".! NE sW! .! .! .!" },
+	{ ". ES eW! ES | -", "_ NE - SW ES SW", ". .! ES NW - .!", "- | NE SW ES -", ". . SW | - |", ". SW . NE sW! |" },
+	{ "SW . SW . | ES", "NE NE . .! NW SW", ".! ES SW . SW NE", "ES NW NE SW NE -", "sN! NE eS! | . _", "| . NE NW .! NW" },
+	{ "NW - sS! . ES SW", "- ES NE - NW |", "NE . . eE! - NW", "NW SW - . - |", "ES . .! SW . _", "NW ES . | .! -" },
+	{ ". NW . .! - .", "_ SW NE | NW .!", ". eS! .! . . -", "ES NW sE! SW . NW", "NE SW ES NW ES ES", "SW NE NW . | .!" },
+	{ ". _ SW . . -", "- NE . eS! . NW", "NW - . NE SW NE", "| ES SW ES NW |", ". sN! NE NW . .", ". . NE NW - NE" },
+	{ ".! - _ NE eS! NE", "NW . NE ES NW .", "NE - . NE SW .!", "SW .! . NW NE SW", "ES .! ES sS! ES NW", ".! . .! NE NW ." },
+	{ ".! ES sW! .! NW ES", ".! NE SW NW . ES", "SW ES NW NW _ SW", "NW | | ES eW! .!", ".! NE SW | .! .!", ".! . NE NW ES -" },
+	{ "ES .! .! . _ .", ". ES SW NE NW .!", "| | NE eW! NW -", ". NE - SW NW .", "NW ES ES NW . .!", "- - NE sW! SW ES" },
+	{ "SW . ES sE! SW SW", ".! NW .! ES NW .", ".! | ES NW _ .", "eE! - NW .! . NE", "NW .! . . .! .!", "ES .! SW - ES .!" },
+	{ "ES SW . . NW NE", "| NE SW | NE ES", "| ES NW .! . _", "| NE sW! . .! .", "NE - - eW! | |", ".! | NE . . ." },
+	{ ".! - _ NE | .!", "| .! ES SW SW -", ".! . | NE SW -", "- ES NW ES NE SW", ".! | . . ES NW", ".! sN! . . NE eW!" },
+	{ ". sE! - SW ES SW", "NW ES eS! NE NW |", ". . NE SW ES NW", "- ES NW NE NW SW", ". .! . . | NW", "NE . - ES _ SW" },
+	{ ". ES NE SW . .!", ". sS! NW SW | |", "ES NW NW NE . _", "NE SW . ES - eW!", "ES NW ES NW . -", "NE - NW | - |" },
+	{ ".! - . sS! NW .!", "| . _ NE SW -", ". ES | ES NW .!", "NW .! NE NE - SW", ". SW ES SW ES NW", "NE eE! NW NE NW -" },
+	{ "ES SW ES - - SW", "eN! NE NW - ES NW", ".! - . sE! NW -", ". . ES - - .", ".! SW NW SW .! .", ". NE _ . .! SW" },
+	{ ". ES . | - .!", ".! SW .! . .! .!", ". NW sS! | NW .", ". ES NW eS! _ |", "SW NE SW NE SW NW", "NW NW NE - NW ." },
+	{ "NE . - SW - .!", "ES SW ES .! ES .!", "| sN! ES eW! ES |", "| ES NE SW NW .!", "NE SW ES NW . .", ". NE NW . _ |" },
+	{ "ES . . . eS! .!", "NW - . NW NE SW", "NE . - . ES NW", "- _ . sS! | .!", "NE . . NE NW .!", "- . ES NE | ." },
+	{ "| . _ | ES sW!", ".! . SW ES NW SW", ". ES SW | . SW", "SW - ES NW | .", ". eE! NW .! . NE", "| .! . NE . ." },
+	{ "_ NW NE .! sE! SW", "- NW . .! ES NW", ". .! SW ES NW NE", "NW ES - NW .! .", "- NE - - eW! .", ". . . . NW .!" },
+	{ ".! .! ES . .! .!", "sE! SW ES SW . .!", ". NE NW | _ eS!", ".! .! ES NW SW |", ".! NW NE SW ES NW", "NW SW .! NE NW NW" },
+	{ "NW ES ES - - SW", ". eE! NW ES sW! |", "- SW ES NE SW |", "SW . _ . NE NW", "| . - . . .", "| - . ES - NW" },
+	{ ". - _ | - |", ".! SW - ES SW NW", "SW NE ES NW eN! .", "| ES NW .! . .", "ES NW SW . . .!", "NE sW! | - . .!" },
+	{ ". SW . eS! ES SW", "ES sW! NW NE NW |", "| ES ES - SW |", "NE - NW _ NE NW", "SW . . ES SW .", ". . | . . .!" },
+	{ ". sS! _ | NE .", "ES NW ES SW - .!", "| ES NW NE - eW!", "| | . ES .! NE", "NE NW . . NW .!", "ES .! | NW | NW" },
+	{ ". - . . . .", "ES SW NE . . _", "SW SW . . NW |", "NW NW NE ES SW SW", "NW ES ES NW NE SW", "NE NE eN! | sE! NW" },
 }
 
 local function parseTok(tok)
@@ -1271,12 +1386,126 @@ local UIS = game:GetService("UserInputService")
 -- letters = pieces (same letter = one piece), R = big red block, . = empty. size decides the colour.
 -- par = best possible number of single-step moves
 local SSL = {
-	{ par = 6,   rows = { "aghb", ".ghi", "cRRi", "jRR.", "jdef" } },
-	{ par = 14,  rows = { "ga.b", "gchd", "RRhe", "RRij", "f.ij" } },
-	{ par = 28,  rows = { "aRRb", "cRRd", "cefd", "gijh", "g..h" } },
-	{ par = 52,  rows = { "gabc", "gRRh", "dRRh", ".i.j", "eifj" } },
-	{ par = 63,  rows = { "gabh", "gRRh", "cRRd", "eijf", ".ij." } },
-	{ par = 116, rows = { "aRRb", "aRRb", "cddf", "cghf", "i..j" } },
+	{ par = 3, rows = { "e.fg", "ehfg", "ahbc", "idRR", "i.RR" } },
+	{ par = 4, rows = { "ffgg", "abhh", "cii.", "e.RR", "edRR" } },
+	{ par = 5, rows = { "eeff", "c.gg", "chha", "RR.d", "RRbd" } },
+	{ par = 5, rows = { "caff", "c.gg", "hhb.", "RRde", "RRde" } },
+	{ par = 6, rows = { ".hhg", "aiig", "bjjc", "d.RR", "efRR" } },
+	{ par = 7, rows = { "e.hh", "ea.b", "fiic", "fgRR", "dgRR" } },
+	{ par = 8, rows = { ".efg", "aefg", "bcii", "RRdh", "RR.h" } },
+	{ par = 9, rows = { "ee..", "ffgg", "hhii", "abRR", "cdRR" } },
+	{ par = 10, rows = { "aib.", ".icj", "defj", "gkRR", "hkRR" } },
+	{ par = 11, rows = { "..ii", "abjj", "ckkd", "RRef", "RRgh" } },
+	{ par = 12, rows = { "hhcd", "aecd", "beRR", "fgRR", "fg.." } },
+	{ par = 13, rows = { "gabh", "gcih", "RRid", "RR.j", "ef.j" } },
+	{ par = 14, rows = { "gghh", "abii", ".cRR", "efRR", "efd." } },
+	{ par = 15, rows = { "ffgg", "c.ad", "chhd", "beRR", ".eRR" } },
+	{ par = 16, rows = { "cdhh", "cdef", "RRef", "RRg.", "abg." } },
+	{ par = 17, rows = { "hhab", ".iie", "RRfe", "RRfg", ".cdg" } },
+	{ par = 18, rows = { "eaii", "e.fg", "RRfg", "RRhb", "cdh." } },
+	{ par = 19, rows = { "ab.c", "gRRh", "gRRh", "id.j", "iefj" } },
+	{ par = 20, rows = { "efga", "efgb", "RRhi", "RRhi", ".c.d" } },
+	{ par = 21, rows = { "abii", ".cjj", "dRRe", "fRRg", "kkh." } },
+	{ par = 22, rows = { "ffgg", "eaRR", "ebRR", "hhcd", "ii.." } },
+	{ par = 23, rows = { "..ai", "bRRi", "cRRj", "kdej", "kfgh" } },
+	{ par = 24, rows = { "eeff", "ggRR", "hhRR", "aiib", "..cd" } },
+	{ par = 25, rows = { "ggae", "fhhe", "fRRb", ".RRc", "d.ii" } },
+	{ par = 27, rows = { "hhag", "RRbg", "RRcd", "iijj", "..ef" } },
+	{ par = 28, rows = { "aRRb", "cRRd", "cefd", "gijh", "g..h" } },
+	{ par = 28, rows = { "a.b.", "cdRR", "ghRR", "ghij", "efij" } },
+	{ par = 29, rows = { "iiRR", "eaRR", "e.f.", "gbfh", "gcdh" } },
+	{ par = 30, rows = { "gghh", "RR.a", "RRbe", "cdfe", "iif." } },
+	{ par = 31, rows = { "iRR.", "iRRa", "bcde", "jfgk", "j.hk" } },
+	{ par = 32, rows = { "eeff", ".agg", ".bRR", "cdRR", "hhii" } },
+	{ par = 33, rows = { "hhRR", "iiRR", "aefb", "cefg", "..dg" } },
+	{ par = 34, rows = { "abii", "cjj.", "RRde", "RRfg", ".kkh" } },
+	{ par = 35, rows = { "ffRR", "ggRR", "ehha", "ebc.", "iid." } },
+	{ par = 36, rows = { "abhh", "RRii", "RRc.", "jjg.", "degf" } },
+	{ par = 38, rows = { "gghh", ".RRe", "aRRe", "fbii", "fc.d" } },
+	{ par = 39, rows = { "RRij", "RRij", "abcd", "k.e.", "kfgh" } },
+	{ par = 40, rows = { "ffRR", "ggRR", "ahh.", "biie", ".cde" } },
+	{ par = 41, rows = { "hh.e", "aRRe", "fRRb", "fgii", ".gcd" } },
+	{ par = 42, rows = { "abRR", "cdRR", "eiif", "jj.g", "kkh." } },
+	{ par = 43, rows = { "aRRg", "hRRg", "hibc", "diej", "f..j" } },
+	{ par = 44, rows = { "eeff", "RR..", "RRab", "gghh", "ciid" } },
+	{ par = 45, rows = { "e.ii", "eRRa", ".RRb", "fghc", "fghd" } },
+	{ par = 47, rows = { "RRhh", "RRab", "iicd", "gef.", "gjj." } },
+	{ par = 48, rows = { ".RRa", "iRRj", "ibcj", "dekf", "ghk." } },
+	{ par = 49, rows = { "ffgg", "eaRR", "e.RR", "bhhc", "dii." } },
+	{ par = 50, rows = { ".abc", "RRgd", "RRge", ".hhf", "iijj" } },
+	{ par = 51, rows = { "gh.a", "ghRR", "ibRR", "icdj", ".efj" } },
+	{ par = 52, rows = { "egga", "efbc", "dfRR", "..RR", "hhii" } },
+	{ par = 53, rows = { "abcd", "iiRR", "e.RR", "jjfg", "kk.h" } },
+	{ par = 55, rows = { "iia.", "RRef", "RRef", "g.hb", "gchd" } },
+	{ par = 56, rows = { "abee", ".ff.", "ggRR", "hhRR", "ciid" } },
+	{ par = 57, rows = { "ahhe", "fRRe", "fRR.", "iibg", ".cdg" } },
+	{ par = 58, rows = { "RRab", "RRii", "efcg", "efhg", "d.h." } },
+	{ par = 59, rows = { "ab.c", "iide", ".fRR", "jjRR", "gkkh" } },
+	{ par = 60, rows = { "gabh", "gRRh", "cRR.", ".ijd", "eijf" } },
+	{ par = 62, rows = { "abe.", "ffec", "d.gg", "hhRR", "iiRR" } },
+	{ par = 63, rows = { ".ahh", "e.RR", "efRR", "bfgc", "iigd" } },
+	{ par = 64, rows = { "RRab", "RRc.", "dehh", "gfii", "gjj." } },
+	{ par = 65, rows = { "..ab", "cdRR", "eeRR", "ffgg", "hhii" } },
+	{ par = 66, rows = { "RRgg", "RRab", "ehhc", "edf.", "iif." } },
+	{ par = 68, rows = { "eRRa", "eRRb", "f.ii", "fgch", ".gdh" } },
+	{ par = 69, rows = { "hhea", ".bef", "cRRf", ".RRg", "iidg" } },
+	{ par = 70, rows = { "abRR", "c.RR", "d.hh", "iieg", "fjjg" } },
+	{ par = 71, rows = { ".ea.", "becf", "ggdf", "RRhh", "RRii" } },
+	{ par = 72, rows = { "ffab", "RRe.", "RRe.", "gghh", "iicd" } },
+	{ par = 73, rows = { "RRab", "RR.c", ".eed", "ffgg", "hhii" } },
+	{ par = 75, rows = { "abcd", "RRhh", "RRii", "gef.", "gjj." } },
+	{ par = 76, rows = { "ffgg", "hha.", ".eRR", "beRR", "iicd" } },
+	{ par = 77, rows = { "RRab", "RRee", "ffgg", "hhc.", ".dii" } },
+	{ par = 78, rows = { "eRRa", "eRR.", ".iif", "ghbf", "ghcd" } },
+	{ par = 79, rows = { "abef", "hhef", "RRc.", "RRgd", "iig." } },
+	{ par = 81, rows = { ".agg", "eRRf", "eRRf", "hhbc", "ii.d" } },
+	{ par = 82, rows = { "RRab", "RRef", "ggef", "chhd", "ii.." } },
+	{ par = 83, rows = { "RRea", "RRef", "biif", ".ghc", ".ghd" } },
+	{ par = 84, rows = { ".RRa", "bRR.", "cdhh", "egii", "fgjj" } },
+	{ par = 85, rows = { "RRff", "RRab", "cdgg", "hh.e", "ii.e" } },
+	{ par = 87, rows = { "ae.f", "becf", "hhdg", "RR.g", "RRii" } },
+	{ par = 88, rows = { "abRR", "ceRR", "deff", "gg..", "hhii" } },
+	{ par = 89, rows = { "e.RR", "eaRR", "iifg", "h.fg", "hbcd" } },
+	{ par = 90, rows = { "hhae", "RRbe", "RRf.", "iifg", "cd.g" } },
+	{ par = 92, rows = { "aeRR", "feRR", "fggb", "chh.", "d.ii" } },
+	{ par = 93, rows = { "abRR", ".eRR", "ceff", ".dgg", "hhii" } },
+	{ par = 94, rows = { "eRRf", "eRRf", ".a.b", "chhg", "iidg" } },
+	{ par = 95, rows = { "RRab", "RRgg", ".hhe", "fcde", "fii." } },
+	{ par = 96, rows = { ".eRR", "aeRR", "b.fc", "hhfg", "diig" } },
+	{ par = 98, rows = { "RR..", "RRab", "ffce", "ggde", "hhii" } },
+	{ par = 99, rows = { "aRRb", "eRRc", "efgg", ".fhh", "dii." } },
+	{ par = 100, rows = { "efRR", "efRR", "ahhg", "iibg", "c..d" } },
+	{ par = 101, rows = { ".RRa", "eRRb", "eggf", "c.df", "hhii" } },
+	{ par = 103, rows = { ".RRa", ".RRb", "effc", "eggd", "hhii" } },
+	{ par = 104, rows = { "aRR.", "eRRb", "e.ff", "cggd", "hhii" } },
+	{ par = 105, rows = { ".aRR", ".eRR", "becf", "hhgf", "iigd" } },
+	{ par = 106, rows = { "RR..", "RRab", "eggf", "ecdf", "hhii" } },
+	{ par = 107, rows = { ".RRa", "eRRb", "ecdf", ".ggf", "hhii" } },
+	{ par = 109, rows = { "aRRb", "cRRd", "e.ff", "e.gg", "hhii" } },
+	{ par = 110, rows = { "abef", "gcef", "gdRR", "..RR", "hhii" } },
+	{ par = 111, rows = { "RRab", "RR..", "ecdf", "eggf", "hhii" } },
+	{ par = 112, rows = { "RRab", "RRff", "ecgg", "e.hh", ".dii" } },
+	{ par = 114, rows = { "hhab", "RRce", "RRfe", "d.fg", ".iig" } },
+	{ par = 115, rows = { "abef", "RRef", "RR.g", "c.dg", "hhii" } },
+	{ par = 116, rows = { "RRab", "RRff", "eggc", "edhh", "..ii" } },
+	{ par = 117, rows = { "eRRa", "eRRf", "gg.f", ".bcd", "hhii" } },
+	{ par = 119, rows = { ".hhe", "a.fe", "RRfg", "RRbg", "ciid" } },
+	{ par = 120, rows = { "abRR", "e.RR", "eggf", "chhf", ".dii" } },
+	{ par = 121, rows = { "eRRa", "eRRb", ".ff.", "cggd", "hhii" } },
+	{ par = 122, rows = { "eRRa", "eRRf", "ggbf", "hhii", "c.d." } },
+	{ par = 124, rows = { "efRR", "efRR", ".hha", "gbcd", "g.ii" } },
+	{ par = 125, rows = { ".aRR", "b.RR", "ffgg", "hhce", "diie" } },
+	{ par = 126, rows = { "eRRa", "eRRb", "cfhh", "gfii", "g.d." } },
+	{ par = 127, rows = { "a.bc", "eRR.", "eRRf", "ggdf", "hhii" } },
+	{ par = 129, rows = { "abRR", "ffRR", "ggc.", "dhhe", "ii.e" } },
+	{ par = 130, rows = { "aeRR", "beRR", "gg..", "chhf", "diif" } },
+	{ par = 131, rows = { "a.b.", "ecRR", "efRR", "gfhh", "gdii" } },
+	{ par = 132, rows = { "ffab", "ggRR", "c.RR", "hhde", ".iie" } },
+	{ par = 134, rows = { "RR.a", "RRbe", "cgge", "fhh.", "fiid" } },
+	{ par = 135, rows = { "eaf.", "ebf.", "RRgc", "RRgd", "hhii" } },
+	{ par = 136, rows = { "abRR", "ffRR", "cgg.", "hhe.", "iied" } },
+	{ par = 137, rows = { "eaRR", "efRR", "bfhh", ".gcd", ".gii" } },
+	{ par = 139, rows = { "aRR.", ".RRe", "ggbe", "fhhc", "fdii" } },
 }
 
 local BLOCKC = {
@@ -1597,12 +1826,127 @@ end
 ------------------------------------------------------------------
 local FW = (function()
 local FWL = {
-	{ word = "FOX", n = 6, letters = "FOX", grid = { "OXOOXX", "OFFFFO", "XFXFOO", "OFOOOF", "XOOFXO", "FXXOXF" } },
-	{ word = "CAT", n = 6, letters = "CAT" },
-	{ word = "DOG", n = 7, letters = "DOG" },
-	{ word = "SUN", n = 7, letters = "SUN" },
-	{ word = "STAR", n = 8, letters = "STAR" },
-	{ word = "MOON", n = 8, letters = "MON" },
+	{ word = "FOX", n = 6, grid = { "OXOOXX", "OFFFFO", "XFXFOO", "OFOOOF", "XOOFXO", "FXXOXF" } },
+	{ word = "CAT", n = 5, grid = { "TATAT", "ACACT", "TAAAT", "TCACT", "CCTAC" } },
+	{ word = "DOG", n = 5, grid = { "DOOOD", "ODGDD", "OGOOD", "OGOOG", "GGOOG" } },
+	{ word = "SUN", n = 5, grid = { "SNSUU", "USNUU", "SUSNN", "NUUNU", "UUUNU" } },
+	{ word = "PIG", n = 5, grid = { "IPPIP", "PPPIP", "IGIGP", "GGIIP", "IIPII" } },
+	{ word = "HEN", n = 5, grid = { "NHNEN", "NHNHN", "NENHE", "EEEEH", "EENHN" } },
+	{ word = "OWL", n = 5, grid = { "OOOLL", "WOOLW", "OWLOW", "WOOLW", "WWWOW" } },
+	{ word = "ANT", n = 5, grid = { "TNTNN", "NAATA", "NAANT", "TAATN", "NTANN" } },
+	{ word = "BAT", n = 5, grid = { "BBAAT", "TTBTT", "TBABB", "BABTA", "ABABT" } },
+	{ word = "COW", n = 5, grid = { "WOOOC", "OOOWC", "OCOWC", "CWWCW", "CCCOO" } },
+	{ word = "RAT", n = 5, grid = { "ATAAR", "AARTA", "TTTRA", "TATTA", "TTRAA" } },
+	{ word = "BUS", n = 5, grid = { "UUUSS", "UBSBB", "BBBUU", "SSBUB", "USBBU" } },
+	{ word = "CUP", n = 5, grid = { "UPUUP", "UCUUU", "CPPCU", "PPPUU", "PUUCU" } },
+	{ word = "HAT", n = 5, grid = { "TTAAH", "TAATT", "AATTT", "ATAAA", "HAAHT" } },
+	{ word = "KEY", n = 5, grid = { "EKYYE", "KKKKK", "KKYYE", "KYYEE", "KEEKY" } },
+	{ word = "MAP", n = 6, grid = { "APMPAP", "MPPAAP", "AMMPMA", "MPMPAA", "APPAAP", "APAPPA" } },
+	{ word = "PEN", n = 6, grid = { "NNNNEN", "PEPNPN", "PNNPPP", "EPPEPE", "PNPPNP", "PEPNEE" } },
+	{ word = "TOP", n = 6, grid = { "PPPPPO", "PTOPTO", "PPPOOT", "OOTPTP", "POPPPP", "TPPTOT" } },
+	{ word = "TOY", n = 6, grid = { "OTYOOT", "YYTOTT", "YOOYYT", "TYYYYO", "YTTYTO", "TTYOYO" } },
+	{ word = "JAM", n = 6, grid = { "JAAMJA", "MMAAMA", "JMJMMM", "JJJMJM", "MAMMMJ", "MJJMAA" } },
+	{ word = "BOX", n = 6, grid = { "OBBOOX", "XBOOXX", "BBOBBB", "OBBOBB", "OBBBXX", "XBXBOX" } },
+	{ word = "FAN", n = 6, grid = { "AAAFFN", "FNFFNA", "FNNFNA", "FFFFFA", "NNAFFF", "NFAFAF" } },
+	{ word = "NET", n = 6, grid = { "TNENEN", "TTETTN", "TTTNTT", "EENTNN", "TETNNT", "NNTTNN" } },
+	{ word = "RED", n = 6, grid = { "DEERRE", "ERRRDD", "EDEDDD", "ERRRDD", "REDRRR", "ERDRRR" } },
+	{ word = "SKY", n = 6, grid = { "SKKKKS", "YSKKSS", "KKYSKS", "YYKKKS", "KSKKKK", "KSSKSK" } },
+	{ word = "ICE", n = 6, grid = { "EICIEC", "IIEIEE", "EIIIEI", "CEEECI", "CEEIEI", "EIECEI" } },
+	{ word = "WEB", n = 6, grid = { "WEWBWW", "WBWWBB", "EEWWWB", "EBEBEE", "BWEEWE", "EWEEWB" } },
+	{ word = "YAK", n = 6, grid = { "AKAAKA", "AKKKAK", "AYYYAA", "AYAYAA", "YYAAKY", "YYYYAY" } },
+	{ word = "LEG", n = 6, grid = { "LGLEEG", "GGLGGL", "EGLLEE", "GGEEEE", "GLLELE", "GEGELG" } },
+	{ word = "ARM", n = 6, grid = { "ARMRMM", "RAMMAA", "RMMMMM", "AMRRAR", "MRMRMM", "AMAMMM" } },
+	{ word = "STAR", n = 6, grid = { "SASRAT", "SRTAST", "SRRTTS", "TSARSS", "TRRSAS", "TRRSRS" } },
+	{ word = "MOON", n = 6, grid = { "OOOMNM", "NNOOOO", "NNMNOM", "MNMOMM", "MMMNMM", "OONNOM" } },
+	{ word = "FISH", n = 6, grid = { "SSSFSF", "IFFHIH", "IFFISH", "ISISHH", "FIHHIH", "HISFHH" } },
+	{ word = "BIRD", n = 6, grid = { "DBDRBD", "BBIBRB", "DRRBDR", "RDDRID", "RIIDRD", "DBRBRR" } },
+	{ word = "TREE", n = 6, grid = { "TTTERE", "ERERRT", "RTERTT", "ETRRER", "TREEER", "ETERTR" } },
+	{ word = "CAKE", n = 6, grid = { "KKCKEK", "EEEAEA", "ACECCE", "CCKCKK", "KKCCEC", "CEKACA" } },
+	{ word = "BOOK", n = 6, grid = { "OBOKOK", "OBBKBB", "KBOOOB", "BBBOKB", "BBBOKB", "BKOOKO" } },
+	{ word = "DUCK", n = 6, grid = { "DDCCKD", "CCDUCC", "CUUUDC", "KKCDCU", "DUKCCU", "UUDCCC" } },
+	{ word = "FROG", n = 6, grid = { "GFROGG", "GFFRRO", "GOFRGR", "GRORGO", "FRGGOR", "GFROOF" } },
+	{ word = "LION", n = 6, grid = { "LIONLO", "LNOOIL", "NLIOII", "IOIILI", "IOINOO", "OLLILN" } },
+	{ word = "BEAR", n = 6, grid = { "ARAERB", "RAAREA", "REBBBE", "EEAERR", "AEEBAA", "EAEAER" } },
+	{ word = "RAIN", n = 6, grid = { "AIANNA", "IRAANR", "NIANIN", "RIIIRN", "NNANNN", "IRANAI" } },
+	{ word = "SNOW", n = 6, grid = { "SNOSWN", "SNSWWO", "SWNNWO", "NWWSOO", "WNONSW", "OWSNSW" } },
+	{ word = "WIND", n = 6, grid = { "NIDDNW", "WNWWWW", "DWDWWN", "NNDIND", "IIWWWD", "WWWIID" } },
+	{ word = "FIRE", n = 6, grid = { "IREERE", "RRFIRE", "RIFRII", "EFIFEI", "RREFIF", "EEFFFI" } },
+	{ word = "SHIP", n = 7, grid = { "PSSPIIP", "IPHPIPS", "HHHHIIS", "SSPHHPH", "IPPPPSH", "IIIHSHP", "HPSIIPH" } },
+	{ word = "KITE", n = 7, grid = { "IIKKTEI", "EEIEKEK", "TTEKKTI", "EEKTKIE", "EIIKTIT", "KIKEIKI", "ITEEKKE" } },
+	{ word = "DRUM", n = 7, grid = { "RDUDDDM", "MDUURRM", "RUDRRDR", "MDUUUMM", "DURMUDR", "DMRUUDR", "DRRMMRM" } },
+	{ word = "GOLD", n = 7, grid = { "DODODOD", "DGDDDGD", "GDGLGLO", "LGODLGD", "GGDGOLG", "OODDODG", "ODDLLDG" } },
+	{ word = "JUMP", n = 7, grid = { "PJUUUJJ", "UUMUMJP", "UUPMUJU", "PPUUUUJ", "JJMMUPP", "UMUMMJM", "MJPMJJM" } },
+	{ word = "LAMP", n = 7, grid = { "LMLLPLP", "LMLMMML", "MAMLPLM", "LLALMAL", "PLPMALM", "MMPAMAP", "MLLAAAA" } },
+	{ word = "BELL", n = 7, grid = { "BBELBBB", "LEBEBEB", "BLELELE", "BEBBEEB", "EEELBBB", "LLLEBBB", "BLBEEBE" } },
+	{ word = "CORN", n = 7, grid = { "RORNOOR", "ONRCCNR", "OCNCNNR", "ORNOOOC", "NNNNCOC", "ONONROC", "CRNOCRR" } },
+	{ word = "DOOR", n = 7, grid = { "ORROORO", "DDDOODO", "RDDODDR", "RDRRDRO", "ODRDDRR", "OORDRDD", "RROODDO" } },
+	{ word = "FARM", n = 7, grid = { "MFAAMMM", "MFFMFMA", "AAMARMR", "RRMRRAA", "MMAMMFA", "FRRAFMF", "ARRMRAA" } },
+	{ word = "GAME", n = 7, grid = { "GEMAEMM", "AMGEEEG", "AAMAGGM", "AEEGAAM", "MGEAMEA", "MAEEEAA", "MMMMGAG" } },
+	{ word = "HAND", n = 7, grid = { "NDAANHN", "ANHADND", "DADHAHD", "NAHNAND", "AHHNDNN", "ANNHDND", "AHADHNA" } },
+	{ word = "MILK", n = 7, grid = { "MMKMILK", "IKILIIL", "MKMLMMM", "KLKKIKK", "LKLMMKM", "MLMLLLI", "IMILIMI" } },
+	{ word = "NOSE", n = 7, grid = { "ONNNESS", "NOENNOO", "NNEOOSS", "OONOSNE", "OSSEOSO", "OONEEON", "SSESOEN" } },
+	{ word = "PARK", n = 7, grid = { "RARARPP", "KAARAPP", "AKAAPRK", "APRPPRK", "RAAAARK", "RPKRRPR", "PKAKAAK" } },
+	{ word = "APPLE", n = 7, grid = { "EEALAAA", "PLLPAAP", "LAEEEAA", "PLAAEPL", "LELEPEL", "ELLLALE", "LPEAPPP" } },
+	{ word = "MOUSE", n = 7, grid = { "OMOMUUS", "EOEUOUS", "UEMOMEM", "MUMUSSO", "EMOUSEM", "EMMSMMM", "OMSSEOU" } },
+	{ word = "TIGER", n = 7, grid = { "GITRGTG", "REREGIT", "TTRIRRI", "TGTGETI", "TTGGIEE", "REEGIRE", "GRERITE" } },
+	{ word = "ZEBRA", n = 7, grid = { "EZEBRAE", "RZZBREZ", "ZZBRZAR", "AEAEBEE", "AEAZBAR", "ZBEZRRE", "BBRABAB" } },
+	{ word = "PIZZA", n = 7, grid = { "ZPPIIPP", "IZAZIAA", "IAPIPPI", "ZPPIIPP", "ZPPIZZA", "IAZAIPP", "IAIZPAP" } },
+	{ word = "HOUSE", n = 7, grid = { "EHUOHSS", "ESOOSHU", "HHSUHEU", "EUHUSOU", "SHOSOEU", "EOUEEEO", "USOUHHO" } },
+	{ word = "WATER", n = 7, grid = { "REWAETT", "ERTTEAW", "AAWRWAT", "AATATTA", "RWRATTE", "ERAAEEA", "AAREEAR" } },
+	{ word = "CLOUD", n = 7, grid = { "OULUOUU", "LODUOLC", "OLUOUOC", "LDOOLUO", "UOOUDCU", "DDDUDOU", "OUUCODD" } },
+	{ word = "PLANT", n = 7, grid = { "LATLNNL", "TTTATAN", "PLNANPL", "PPTANLN", "LATLLPL", "ANPNPPL", "ATPLAAT" } },
+	{ word = "SMILE", n = 7, grid = { "LILSIEI", "IMELSIE", "IESEIEM", "MSMLLSE", "MELSSLL", "MSMILEL", "SSEESEL" } },
+	{ word = "TRAIN", n = 7, grid = { "NTRRRII", "IRRNAIT", "ANINIIR", "RNRRAIR", "TARTARN", "NNINNAT", "RARNNRR" } },
+	{ word = "ROBOT", n = 7, grid = { "OOBBTBB", "TTTOTRB", "OBBRORT", "BOTOOOT", "ORTBTRT", "ROBTOOB", "RRBTOOB" } },
+	{ word = "MUSIC", n = 7, grid = { "CUIMSMM", "UMMSUIM", "ISMIIUS", "IMUSUUC", "UMUSUMI", "IMUSICS", "MCCUMSC" } },
+	{ word = "CANDY", n = 7, grid = { "CNANCYA", "DYYCDCD", "NNNAYDN", "CYCNDAC", "NDNDYCA", "NYYYNCA", "DDYACYD" } },
+	{ word = "BREAD", n = 7, grid = { "RERDDBE", "BRDAERB", "EBRRBBD", "RERABEE", "BEBDRAA", "ERRAABA", "DBDBBRD" } },
+	{ word = "HORSE", n = 8, grid = { "SOROHORR", "SHOORSSH", "EHHEESHH", "EREREORE", "SEHORSEE", "HEOESSSS", "HOEOOEHO", "OEOHEHRH" } },
+	{ word = "SHEEP", n = 8, grid = { "SSESEPSE", "EPSSSSHH", "HHPPPHSH", "SEPEHHEP", "EHSESSHH", "SHEHHPSH", "EEESESHS", "SHHSPSPS" } },
+	{ word = "QUEEN", n = 8, grid = { "EEEUNEEN", "QNQUQEUN", "NNUUENQN", "QENQEEQN", "EEQNUUUQ", "UNQQNNEQ", "EUEEQEEN", "NEQNEENN" } },
+	{ word = "LEMON", n = 8, grid = { "LONNNENN", "NNONEOMO", "ELMLNOLM", "NMEONLME", "LEEEOOEL", "EMEONNEN", "LLNLOENL", "MLEONNEN" } },
+	{ word = "GRAPE", n = 8, grid = { "GAEGPGRE", "EERPERAG", "AEEAGRAE", "GPPEGRRE", "AERAGGRG", "GPPEPARG", "PAEEEPGA", "GAAPPAAA" } },
+	{ word = "BEACH", n = 8, grid = { "HEABEABA", "CECABCEA", "AAACBCAA", "AHCAEBAE", "HACBHBEA", "BEHEEAEC", "CCEHECBH", "HHCCAEAB" } },
+	{ word = "CLOCK", n = 8, grid = { "KKCOOKLC", "KCCOOLOL", "COOKLLOL", "CLLOLLOC", "OOLKKLLC", "OCCLLOLK", "LKKLCKCK", "KKKKOKOC" } },
+	{ word = "DREAM", n = 8, grid = { "AEEEMMEA", "MRADAEEM", "ERMRMMDM", "EMRRREMR", "DDREAMEM", "RAAEADAR", "AAMEMEEE", "EERDARED" } },
+	{ word = "EAGLE", n = 8, grid = { "GLALLAAE", "AGALGEAE", "LELLEGAE", "AAEGELEA", "EGGGALGG", "LLAEEAAE", "EEGGEAAG", "AGALLLAA" } },
+	{ word = "FLAME", n = 8, grid = { "MMLMMLAM", "AFFMEFAL", "AALEELFF", "LFEFMAAA", "FMLLAMAL", "ALMFFEEL", "EELAFAMA", "FFAAMAAL" } },
+	{ word = "GHOST", n = 8, grid = { "SSSGOGSO", "TOTSHSHO", "TTHOHGGO", "OHSOHGTS", "HTOTSOSH", "HHHGOTGH", "OHHGTOTG", "HOOGGTTT" } },
+	{ word = "HONEY", n = 8, grid = { "EONEYEYY", "EEHOYYEH", "OEYNEEYN", "YNEYNONO", "EHEENONO", "NYYYEYEN", "ONHYHNHY", "HNONEHYO" } },
+	{ word = "JELLY", n = 8, grid = { "LEEELLYL", "YYLELJEJ", "JYLJYJLL", "EJJYLJLL", "JLYELLYJ", "YJYEELYL", "LELJJYYE", "JLYJJEEY" } },
+	{ word = "KOALA", n = 8, grid = { "LAOAKKAL", "AAAKLAAL", "LLLAKLLK", "AKKOOALK", "OLLLOKKA", "KOAAAALK", "KKLAOKKK", "OOOLLLOA" } },
+	{ word = "LLAMA", n = 8, grid = { "MLLAALMM", "LLMLMMLM", "AMMLLLAL", "ALLALMAM", "MLLALLLM", "AMLMALMM", "AMLAMLAL", "AMALAALM" } },
+	{ word = "MANGO", n = 8, grid = { "AGNMMOAA", "MOMAAMAG", "MAAGAONO", "NAGGGNGG", "MMNNAANG", "MNAGOAMG", "ONGAOOAA", "OANNGONA" } },
+	{ word = "ORANGE", n = 8, grid = { "GGRAGOEE", "RRNGAORO", "GORAOGGR", "AREOOOOO", "GAAGOEGR", "RNOOOAOA", "NGGAEGOG", "OENENEAG" } },
+	{ word = "BANANA", n = 8, grid = { "ABANABBB", "AANNANAB", "BAANANBN", "ABNNAABA", "NBANANBA", "NBANNNNA", "NNNNANBB", "NBNNNNBA" } },
+	{ word = "DRAGON", n = 8, grid = { "DAOAOONR", "ORGOANAN", "AAODDGOO", "DNONANGG", "OOGORGRA", "NGNRARGR", "ONRDRAND", "GADAADOG" } },
+	{ word = "PLANET", n = 8, grid = { "NNELPLTL", "TLLNPEEA", "ENNANEET", "NANPPTPL", "AETTPETN", "LLEPEPNN", "PPTTTEAT", "PLAPPPAA" } },
+	{ word = "ROCKET", n = 8, grid = { "KKOOOREO", "OKTTRCRK", "ERERTCTC", "KTCROETT", "TOKKKTTK", "KCECKRCT", "KTOERKKO", "KREETCTK" } },
+	{ word = "GARDEN", n = 8, grid = { "GADGEAEN", "NEGNNDEN", "RGRRGEED", "ERAGNNGR", "RDGARDEN", "DNDAEAEE", "DGRADDGN", "NRNRDEAA" } },
+	{ word = "FOREST", n = 8, grid = { "OEROTOTT", "OTFTFTTF", "OOFTTFRS", "FOEOOORS", "OETFERFS", "RSOSRETS", "FFRESSEF", "RTEROTOS" } },
+	{ word = "BUTTER", n = 8, grid = { "BBRBTTUT", "TUBUBEBU", "RRUTTRRB", "RBETTRBT", "UERETUEU", "UETREEBE", "RBEERRBT", "BTUEUBTB" } },
+	{ word = "CASTLE", n = 8, grid = { "ELTLTTCT", "SALLCATA", "CLLCSSEC", "CTLTCAEE", "STLTSCLT", "EETECTET", "ETSEELCL", "CLCLCCCA" } },
+	{ word = "SUMMER", n = 8, grid = { "RESMEEES", "SRUERSSU", "URSERUUS", "RRRREMSM", "ERMMUMME", "RSUMSEMU", "UEMEURUM", "MUMSURUU" } },
+	{ word = "WINTER", n = 8, grid = { "TEIIRWTI", "WNWINTER", "ERINIIWR", "EWRNRNER", "WNNRNITN", "TNEWEENR", "REWNERIR", "NWWWNRIR" } },
+	{ word = "FLOWER", n = 8, grid = { "LOLEREOR", "EFWEWLWO", "FLWOLEOL", "EOFOWOWL", "OWOLWFOF", "WEFLEFEL", "EROOFLRE", "ROWWFRRR" } },
+	{ word = "JUNGLE", n = 8, grid = { "NNEGJJNN", "NEGLJLEL", "JNUJUGEG", "UNEGNULE", "GEJGGUGL", "UJUGLJEE", "UEGNEEGN", "UUNEUEJU" } },
+	{ word = "PIRATE", n = 8, grid = { "RPAEEAPE", "IIPAEITE", "IARIRTIP", "ITEATRTP", "RTTEPTTI", "AEAIARRP", "IPAEATTI", "ETPTAIRA" } },
+	{ word = "SPIDER", n = 8, grid = { "IIDRDEPI", "RRPRRISR", "RDEDDSSR", "IIRSSPPE", "PSRRDRSP", "ESSPIDER", "PEIIDIPE", "EIPSEEEI" } },
+	{ word = "TURTLE", n = 9, grid = { "TUEUELRLU", "TRRRTRTLL", "LLRLUUURE", "TTLEREUTE", "EUURLLTTE", "REURUURTL", "EURETERUT", "TELTELELR", "RLTTEEETU" } },
+	{ word = "MONKEY", n = 9, grid = { "NYNYNEYMY", "KNMNKNNOO", "MNKENYEYO", "YYOYOKMKK", "MOMOYKYEE", "ONMEKEOEY", "KYYEEYNEO", "ENEMONKEY", "KMYOYMNYM" } },
+	{ word = "PEPPER", n = 9, grid = { "RRERRPRPE", "EEPEPRPPE", "PEPPPEPPE", "PEPREERRR", "EPPEPEPEP", "PEERRRPPR", "RPPPEERRP", "EEPRRRERP", "EEREPRRRP" } },
+	{ word = "COOKIE", n = 9, grid = { "OEICOIIOC", "KEEEKIKOO", "COOIICKIE", "OKKIKCICK", "ECCCOOIOI", "OIKIKKOEI", "KCKKIIKCC", "CIOKIEICO", "EOIEIOKOO" } },
+	{ word = "BUBBLE", n = 9, grid = { "LEUUUEBBE", "BEBEEBBLE", "ULEEBBBBU", "UEEEELBUL", "UELEBLBEL", "LLUUBUUBL", "BLLBBLULU", "ELBUELUBB", "BBUBBLEEU" } },
+	{ word = "CANDLE", n = 9, grid = { "NLACLELCC", "NNLNEENEC", "CCNAALNNE", "NNNDLDEEN", "EDCENNELE", "LAALNACCL", "AECNCCLDC", "ANADAEEEE", "CCDDENLLL" } },
+	{ word = "DONKEY", n = 9, grid = { "NYDKYEKDO", "KEOOKYKEN", "KKOENDEYD", "YNNYYKYOO", "DOEDNNEDY", "YNNDNYNYN", "DDEEYEYKN", "EYYOEKDNO", "KONYEDKYE" } },
+	{ word = "ISLAND", n = 9, grid = { "LIDIDLISS", "NLNNNDSSA", "LNIAIDLAN", "LLLSANADS", "INNSNDNID", "NIDANSDLA", "LLNNSNANA", "IASIISNLI", "ANNDSIADD" } },
+	{ word = "KITTEN", n = 9, grid = { "NTETTKTIK", "NNKIIENKI", "EINIKENNT", "KITTENKIN", "NTIENIIEK", "TTENITEIT", "NNIEEIKKT", "INEIKNKKK", "INEKTNNKE" } },
+	{ word = "MARKET", n = 9, grid = { "TKETRATMR", "KREARKREE", "RTMKERRAK", "AEAERKMMM", "RKMRAEMKT", "ERMTMTTTM", "MAETKETAM", "RMAAMAREM", "RRMMKEKMM" } },
+	{ word = "PENCIL", n = 9, grid = { "ENPLPLNNI", "PIPENCILI", "NNLIILLNN", "PNLPPILLN", "PEECPELCI", "NNPIELINP", "LNPCNIECC", "INICCLELL", "ELIPNLPCN" } },
+	{ word = "RABBIT", n = 9, grid = { "IIIBTTTAI", "ITIRRBRTB", "IRIRTRTRT", "TIRAABIRA", "RBIBAAABB", "ITTBTIART", "BBIIABIRT", "IARTBTRBA", "TBRTRARBA" } },
+	{ word = "SILVER", n = 9, grid = { "VILSLVSVS", "EVSLLRELV", "EVEVERVVE", "IIVEESEVS", "SELVLLVSI", "VSLLREEVV", "IILRSLRRE", "SEEVSVSES", "LRVLEEVLE" } },
+	{ word = "TUNNEL", n = 9, grid = { "EUULUNEUL", "TNTNLLNTE", "LNTUENUUU", "ELLNNENNL", "ELLLUEENU", "ENNEEULEL", "TNLLNUNLE", "TTTEULENL", "NNLETUELE" } },
+	{ word = "WINDOW", n = 9, grid = { "WDIOOWIDD", "OWIDNWOOO", "NONWDIIWO", "IDDOOIWID", "NNONNIDOW", "NIWDWNWWW", "IWWWDDDII", "WIDWODWDD", "OWNONWWDW" } },
 }
 local DIR8 = { { 0, 1 }, { 1, 0 }, { 1, 1 }, { 1, -1 }, { 0, -1 }, { -1, 0 }, { -1, -1 }, { -1, 1 } }
 local function sgn(x) return x > 0 and 1 or (x < 0 and -1 or 0) end
@@ -1825,13 +2169,126 @@ local CS_COL = {
 }
 -- each peg is written bottom -> top, "-" = empty peg (all levels checked: they can be solved)
 local CSL = {
-	{ cap = 4, pegs = "ccba - acbb - abca" },
-	{ cap = 4, pegs = "- bcdb dcbd - acac adab" },
-	{ cap = 4, pegs = "ebcb - caed bced daea - dcba" },
-	{ cap = 4, pegs = "feca - bccb - fdae addc abdf efeb" },
-	{ cap = 5, pegs = "cdfea - afccb abddd eebfa deabe bfccf -" },
-	{ cap = 5, pegs = "adfgc ghehd bfbae bdchc aegcf ffcga - abheh - bdegd" },
-	{ cap = 5, pegs = "- bhhie fhcfg dciai ibcgb edffe badec - fbhed ighag gcada" },
+	{ cap = 4, pegs = "- - bbba cacb caca" },
+	{ cap = 4, pegs = "- - acab bbcc cbaa" },
+	{ cap = 4, pegs = "bbaa - cbac acbc -" },
+	{ cap = 4, pegs = "cabc - - abba cabc" },
+	{ cap = 4, pegs = "aabc - bbcb aacc -" },
+	{ cap = 4, pegs = "baac ccca - - abbb" },
+	{ cap = 4, pegs = "- - abac cbac bcab" },
+	{ cap = 4, pegs = "cabb cbac aabc - -" },
+	{ cap = 4, pegs = "ccca - - bbba aacb" },
+	{ cap = 5, pegs = "ccbba - abbac cbcaa -" },
+	{ cap = 5, pegs = "- bbcab acaca acbbc -" },
+	{ cap = 5, pegs = "abcbc - - caaac abbcb" },
+	{ cap = 5, pegs = "bcaab aaccb acbcb - -" },
+	{ cap = 5, pegs = "bbbac - bacca cacba -" },
+	{ cap = 5, pegs = "bcbca - - aacaa bbccb" },
+	{ cap = 5, pegs = "- cccba acbab - babac" },
+	{ cap = 5, pegs = "aacbc bbcaa - cbabc -" },
+	{ cap = 4, pegs = "adad dbbc - dcbb caca -" },
+	{ cap = 4, pegs = "- - cbab dbda dbcc aadc" },
+	{ cap = 4, pegs = "cdda - - cdba cada bbcb" },
+	{ cap = 4, pegs = "bdcc dabb - - aacd acbd" },
+	{ cap = 4, pegs = "ddba bcac cdbd - - caba" },
+	{ cap = 4, pegs = "adcd ccaa dbcb bbad - -" },
+	{ cap = 4, pegs = "abad ccac - bbda dbdc -" },
+	{ cap = 4, pegs = "aadd cbaa - - bdbb dccc" },
+	{ cap = 4, pegs = "- - aadd cdac abcb bdcb" },
+	{ cap = 5, pegs = "daddd dcaab - cbbaa ccbcb -" },
+	{ cap = 5, pegs = "dcabd ddaca bcbda - - bccab" },
+	{ cap = 5, pegs = "- abadc acacb dbadb - cbddc" },
+	{ cap = 5, pegs = "aaccb - bcdbc dddac - adbab" },
+	{ cap = 5, pegs = "ddabb bddca cdacb - - bcaca" },
+	{ cap = 5, pegs = "aabcb - - ccabd dbdac dacbd" },
+	{ cap = 5, pegs = "dbdcd - - cbaca ccabd babda" },
+	{ cap = 5, pegs = "badcb - cdbcb cacdd dabaa -" },
+	{ cap = 4, pegs = "- adeb ccec aebe dbcd - daba" },
+	{ cap = 4, pegs = "- bbca edcd acab - eced edba" },
+	{ cap = 4, pegs = "aeac edeb - dedd caba cbbc -" },
+	{ cap = 4, pegs = "ecbc - dadd abba ceab dece -" },
+	{ cap = 4, pegs = "- - eadc ebea bccd cbdd baea" },
+	{ cap = 4, pegs = "aedd ccbe - debb baed - caac" },
+	{ cap = 4, pegs = "- edeb ceac bbac bded - cada" },
+	{ cap = 4, pegs = "cddd - - cedc bcaa eebe baba" },
+	{ cap = 4, pegs = "ecde acea deda - abbb cdcb -" },
+	{ cap = 5, pegs = "ebcac - adbad abcae ddbce bceed -" },
+	{ cap = 5, pegs = "accab abedb decca eebbd ddeca - -" },
+	{ cap = 5, pegs = "- eecbe - daecd cdbbc adabb daeac" },
+	{ cap = 5, pegs = "dbecd aabcd caeee - dabea - bdcbc" },
+	{ cap = 5, pegs = "eddcc cdead beebb - cdbaa - aaecb" },
+	{ cap = 5, pegs = "- - dcbdd eaebd eebaa cccba abdce" },
+	{ cap = 5, pegs = "adaeb - caaec ecdac bbebd - cdebd" },
+	{ cap = 5, pegs = "dcdae ebeea - abcbb - cecba ddadc" },
+	{ cap = 4, pegs = "ecee aeca dffc bbda cffb badd - -" },
+	{ cap = 4, pegs = "afbd - bcfa ecfb - eaed fecb dcda" },
+	{ cap = 4, pegs = "dbaa - bcea ffec abee ddbc - cfdf" },
+	{ cap = 4, pegs = "- eaef dbeb dadc fbfc - afca edbc" },
+	{ cap = 4, pegs = "fbfa dcfb cdad feae - cbed bcea -" },
+	{ cap = 4, pegs = "- - cbcc abdb fcde dffa eabd aefe" },
+	{ cap = 4, pegs = "dcab - ecac - baed dfeb fdff aebc" },
+	{ cap = 4, pegs = "fbbd - cacb afae cfaf eeed dcbd -" },
+	{ cap = 4, pegs = "acaf efbc ddab - dfce - fbca deeb" },
+	{ cap = 5, pegs = "eadbe - fdbcf - caeea dcbfc adacb ffdeb" },
+	{ cap = 5, pegs = "adbec afecc baeea - fbdfe bfcbf dcdda -" },
+	{ cap = 5, pegs = "- cebcc edcef ddcab ebdff aaabf - efbda" },
+	{ cap = 5, pegs = "cabfd acdeb - adbfd aeebf - beeac ccffd" },
+	{ cap = 5, pegs = "bafad edfef dcfbe - baada befbc ceccd -" },
+	{ cap = 5, pegs = "- dabec fbabc cadda cdbff befee - daecf" },
+	{ cap = 5, pegs = "- ebbef ccbfe edcdd aafea fdbdb ccfaa -" },
+	{ cap = 5, pegs = "efacf eafeb - dbdbe adcdd ecbcc afbaf -" },
+	{ cap = 4, pegs = "- fefe ggac bddb - gafc abdd acfb ecge" },
+	{ cap = 4, pegs = "- baff bcef ebcc - aged eafd dbgd acgg" },
+	{ cap = 4, pegs = "egdb - befc cgea - efbf bcac dgfd agda" },
+	{ cap = 4, pegs = "fbba dcfd ccab - geda fgeg cdgb feae -" },
+	{ cap = 4, pegs = "- dccd aagf acfg fbbe dgee - becg abfd" },
+	{ cap = 4, pegs = "aead defe - gefd - cbac bdcb gagf bfgc" },
+	{ cap = 4, pegs = "- cefa ceed ggbb egfb dcad - bgfa cfad" },
+	{ cap = 4, pegs = "fage - afbe ebcg fcdd - gabb dfdc egca" },
+	{ cap = 4, pegs = "accg dfeb gabd - bfdg cgda - efef beac" },
+	{ cap = 5, pegs = "- dfbab bccfa bedeg - agdff gdage efcdb cecag" },
+	{ cap = 5, pegs = "bbdab cdcgg fgcfe fggbb - - dedef daaca facee" },
+	{ cap = 5, pegs = "gebbf gacbe edfcb dcdba egcff aadgc - - dfgea" },
+	{ cap = 5, pegs = "efaaf bedef fccda - - ddacd efggg abbbb cegcg" },
+	{ cap = 5, pegs = "edgaa acgbf gbfcg ecbba debde - dfdca fgfce -" },
+	{ cap = 5, pegs = "dbeba gbeae acfcd gcfeg - bagcd cefbg - dffda" },
+	{ cap = 5, pegs = "cfcad bgegb ffdea - gdabe egbga - ddfcf accbe" },
+	{ cap = 5, pegs = "- egdfg egbba aafdf bdgcb cbeeg efcca fdcda -" },
+	{ cap = 4, pegs = "- hfbh cggh edae bage hebd ddcc caff abgf -" },
+	{ cap = 4, pegs = "dghh befd gfed ahfe hbcb gbag acda - fecc -" },
+	{ cap = 4, pegs = "eahg hbfc gdgf dfhe - - eaac dbea gbdc bchf" },
+	{ cap = 4, pegs = "ebdb - agaf gedb befh - aach gdcf hcch degf" },
+	{ cap = 4, pegs = "deah - bagc fhah befc ceba bdfd dfeh - ggcg" },
+	{ cap = 4, pegs = "fcdd echb bbfa bhfg - agcd cagh gdea heef -" },
+	{ cap = 4, pegs = "fdef - hfcg ggga dhae - bdbf hhbc eaad ebcc" },
+	{ cap = 4, pegs = "cbac bgfe hfga dehf cdfd - beha - hage dgbc" },
+	{ cap = 4, pegs = "ghhe cbac bece bffe dbda - hfdc dhaa - ggfg" },
+	{ cap = 5, pegs = "dedfe eccfe dcgbh gfhbf - - haaae bacdg cgbfd ahbgh" },
+	{ cap = 5, pegs = "fache dfhde hbbfa ebagg aeggd dafcg - ceccf dhbbh -" },
+	{ cap = 5, pegs = "- gebah achfe bebhf fedce acfac hdgdg - cgdfd bbgha" },
+	{ cap = 5, pegs = "ccgcf cadge hcdbg - fhaaf hegee - adddg ebhah bbbff" },
+	{ cap = 5, pegs = "- - cagaf gbaha ddeeg dccbe hgehf adbcf fdbhf bechg" },
+	{ cap = 5, pegs = "- dfbad eheeh cbaac - fdhga gbfeg bbche gfcgc fddah" },
+	{ cap = 5, pegs = "ahaff - gdegd cgged bbdhc aebac aehfb gefhc - cfhdb" },
+	{ cap = 5, pegs = "gahga heddb hffeg eabdc - acebf bcfgg dabfd - hhecc" },
+	{ cap = 4, pegs = "gdef bfaf cbcb eehh dahc igdb - aaeh gifg - dici" },
+	{ cap = 4, pegs = "- edia hdic cbff aeha begd cihf - habg debg gfci" },
+	{ cap = 4, pegs = "aeic iaeg bbdh fedg hecd - - idgi afcf hgbh acfb" },
+	{ cap = 4, pegs = "ghcd dfig cice - ighe gbba cifh daaf dbfh - eeba" },
+	{ cap = 4, pegs = "egci - echg fehc bfad - hiad chda aibg degi fbfb" },
+	{ cap = 4, pegs = "agbb cahe - ehgg hied acci fgfb deia idfc hfdb -" },
+	{ cap = 4, pegs = "fbcb ccgi iddi iaeb ebaf fgee fahh - dchg gdah -" },
+	{ cap = 4, pegs = "bdfg gcea dbbf aeii behh gidf chca - - head fgic" },
+	{ cap = 4, pegs = "- fdcf cgig ifeb hebf acdd dhhb gaai - ebei cgha" },
+	{ cap = 5, pegs = "fehba cibhe - fceaf icgdd deifh dgihf bcgbg ahbag daice -" },
+	{ cap = 5, pegs = "bbfha daaie degef - behcg ffadc dgagc fcghi cbdhe hbiii -" },
+	{ cap = 5, pegs = "eaiid hgiai cfgdd dhega - hhfbe - ebgcf ecfad fcbga bchbi" },
+	{ cap = 5, pegs = "fcgba hieig - - bihgd baefc cbgdc dddaa abffg hehci ifhee" },
+	{ cap = 5, pegs = "baidg - bceef ceadh dgffa dgbbh ieifc hhfie gbcih acdag -" },
+	{ cap = 5, pegs = "hdege fbeci effac gifhi ccidd gaafb - acgba bhegd - bhhdi" },
+	{ cap = 5, pegs = "- bcbic bhdbc - aghdf cgiea aedei idaga fecfd fhgbg ifehh" },
+	{ cap = 5, pegs = "cafgc hgdge ihfai hebei - cffeb dcbbc - bdida iaggd haefh" },
+	{ cap = 4, pegs = "jide djde bbhe hhfa gfhg - iejc bbac gfai gcci - ajdf" },
 }
 
 local function shade(c, f)
@@ -2136,6 +2593,421 @@ return {
 end)()
 
 ------------------------------------------------------------------
+-- MATCHING CARDS (Halloween memory game): flip two cards at a time and find all the pairs
+------------------------------------------------------------------
+local MC = (function()
+local MC_COUNT = 120
+local ICONS = { "pumpkin", "skull", "spider", "bat", "cat", "cauldron", "apple", "frank", "ghost",
+	"hat", "moon", "star", "eye", "bone", "web", "candy", "tomb", "potion" }
+local ORANGE, PURPLE = Color3.fromRGB(255, 140, 20), Color3.fromRGB(112, 70, 170)
+
+-- every picture is drawn from simple shapes (no images or fonts needed)
+local function drawIcon(holder, id)
+	local DK = Color3.fromRGB(34, 28, 40)
+	local WH = Color3.new(1, 1, 1)
+	local function R(x, y, w, h, col, round, rot, stroke)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = col
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, h)
+		if rot then f.Rotation = rot end
+		if round then Instance.new("UICorner", f).CornerRadius = UDim.new(round, 0) end
+		if stroke then
+			local st = Instance.new("UIStroke")
+			st.Color = stroke
+			st.Thickness = 1.5
+			st.Parent = f
+		end
+		f.Parent = holder
+		return f
+	end
+	local function C(x, y, d, col, stroke) return R(x, y, d, d, col, 0.5, nil, stroke) end
+	local function Ln(x1, y1, x2, y2, th, col)
+		local dx, dy = x2 - x1, y2 - y1
+		local len = math.sqrt(dx * dx + dy * dy)
+		return R((x1 + x2) / 2 - len / 2, (y1 + y2) / 2 - th / 2, len, th, col, 0.5, math.deg(math.atan2(dy, dx)))
+	end
+	local function O(x, y, d, col, th)
+		local f = R(x, y, d, d, col, 0.5)
+		f.BackgroundTransparency = 1
+		local st = Instance.new("UIStroke")
+		st.Color = col
+		st.Thickness = th or 2
+		st.Parent = f
+	end
+
+	if id == "pumpkin" then
+		local dkO = Color3.fromRGB(160, 70, 0)
+		R(0.45, 0.08, 0.1, 0.2, Color3.fromRGB(86, 150, 52), 0.3, 10)
+		R(0.08, 0.26, 0.46, 0.6, Color3.fromRGB(238, 120, 20), 0.5, nil, dkO)
+		R(0.46, 0.26, 0.46, 0.6, Color3.fromRGB(238, 120, 20), 0.5, nil, dkO)
+		R(0.28, 0.22, 0.44, 0.68, ORANGE, 0.5, nil, dkO)
+		R(0.3, 0.44, 0.13, 0.13, DK, 0.1, 45)
+		R(0.57, 0.44, 0.13, 0.13, DK, 0.1, 45)
+		R(0.3, 0.66, 0.4, 0.1, DK, 0.3)
+		R(0.4, 0.65, 0.06, 0.06, ORANGE, 0.1)
+		R(0.54, 0.65, 0.06, 0.06, ORANGE, 0.1)
+	elseif id == "skull" then
+		local bone = Color3.fromRGB(248, 244, 232)
+		R(0.2, 0.1, 0.6, 0.52, bone, 0.4, nil, Color3.fromRGB(170, 165, 150))
+		R(0.3, 0.52, 0.4, 0.3, bone, 0.2, nil, Color3.fromRGB(170, 165, 150))
+		C(0.25, 0.26, 0.22, Color3.fromRGB(250, 214, 40), DK)
+		C(0.53, 0.26, 0.22, Color3.fromRGB(250, 214, 40), DK)
+		C(0.33, 0.34, 0.08, DK)
+		C(0.61, 0.34, 0.08, DK)
+		R(0.46, 0.52, 0.08, 0.08, DK, 0.1, 45)
+		for _, x in ipairs({ 0.4, 0.5, 0.6 }) do Ln(x, 0.68, x, 0.8, 0.025, Color3.fromRGB(150, 145, 130)) end
+	elseif id == "spider" then
+		for _, p in ipairs({ { 0.92, 0.26 }, { 0.97, 0.48 }, { 0.92, 0.7 }, { 0.84, 0.9 } }) do
+			Ln(0.5, 0.55, p[1], p[2], 0.04, DK)
+			Ln(0.5, 0.55, 1 - p[1], p[2], 0.04, DK)
+		end
+		C(0.3, 0.4, 0.4, DK)
+		C(0.38, 0.24, 0.24, DK)
+		C(0.43, 0.3, 0.06, WH)
+		C(0.51, 0.3, 0.06, WH)
+		C(0.4, 0.46, 0.1, Color3.fromRGB(230, 60, 60))
+	elseif id == "bat" then
+		local navy = Color3.fromRGB(56, 66, 122)
+		R(0.04, 0.26, 0.44, 0.3, navy, 0.5, -18)
+		R(0.52, 0.26, 0.44, 0.3, navy, 0.5, 18)
+		C(0.08, 0.5, 0.14, navy)
+		C(0.2, 0.52, 0.14, navy)
+		C(0.32, 0.5, 0.14, navy)
+		C(0.78, 0.5, 0.14, navy)
+		C(0.66, 0.52, 0.14, navy)
+		C(0.54, 0.5, 0.14, navy)
+		R(0.4, 0.25, 0.2, 0.42, navy, 0.5)
+		R(0.4, 0.15, 0.06, 0.14, navy, 0.3, -15)
+		R(0.54, 0.15, 0.06, 0.14, navy, 0.3, 15)
+		C(0.43, 0.34, 0.06, WH)
+		C(0.51, 0.34, 0.06, WH)
+		R(0.46, 0.5, 0.08, 0.06, WH, 0.3)
+	elseif id == "cat" then
+		R(0.2, 0.16, 0.2, 0.2, DK, 0.15, 45)
+		R(0.6, 0.16, 0.2, 0.2, DK, 0.15, 45)
+		R(0.16, 0.28, 0.68, 0.54, DK, 0.4)
+		C(0.26, 0.4, 0.18, Color3.fromRGB(255, 214, 40))
+		C(0.56, 0.4, 0.18, Color3.fromRGB(255, 214, 40))
+		R(0.34, 0.42, 0.03, 0.14, DK, 0.5)
+		R(0.63, 0.42, 0.03, 0.14, DK, 0.5)
+		R(0.38, 0.64, 0.24, 0.1, Color3.fromRGB(232, 64, 64), 0.5)
+		R(0.47, 0.58, 0.06, 0.05, Color3.fromRGB(255, 130, 150), 0.5)
+	elseif id == "cauldron" then
+		R(0.24, 0.8, 0.12, 0.12, DK, 0.4)
+		R(0.64, 0.8, 0.12, 0.12, DK, 0.4)
+		R(0.14, 0.36, 0.72, 0.48, DK, 0.5)
+		R(0.1, 0.3, 0.8, 0.1, Color3.fromRGB(80, 80, 92), 0.5)
+		R(0.16, 0.24, 0.68, 0.12, Color3.fromRGB(126, 226, 64), 0.5)
+		C(0.28, 0.1, 0.1, Color3.fromRGB(126, 226, 64))
+		C(0.46, 0.04, 0.14, Color3.fromRGB(126, 226, 64))
+		C(0.68, 0.12, 0.08, Color3.fromRGB(126, 226, 64))
+	elseif id == "apple" then
+		R(0.47, 0.04, 0.06, 0.3, Color3.fromRGB(214, 172, 112), 0.3)
+		C(0.18, 0.28, 0.64, Color3.fromRGB(218, 66, 28), Color3.fromRGB(130, 30, 10))
+		R(0.22, 0.62, 0.56, 0.2, Color3.fromRGB(200, 92, 24), 0.5)
+		C(0.3, 0.38, 0.12, Color3.fromRGB(255, 190, 170))
+	elseif id == "frank" then
+		R(0.1, 0.46, 0.1, 0.1, Color3.fromRGB(150, 152, 162), 0.3)
+		R(0.8, 0.46, 0.1, 0.1, Color3.fromRGB(150, 152, 162), 0.3)
+		R(0.18, 0.14, 0.64, 0.7, Color3.fromRGB(142, 204, 72), 0.12, nil, Color3.fromRGB(70, 110, 30))
+		R(0.18, 0.14, 0.64, 0.2, DK, 0.12)
+		C(0.26, 0.4, 0.2, WH, DK)
+		C(0.54, 0.4, 0.2, WH, DK)
+		C(0.33, 0.47, 0.08, DK)
+		C(0.61, 0.47, 0.08, DK)
+		R(0.26, 0.37, 0.22, 0.04, DK, 0.5, 8)
+		R(0.52, 0.37, 0.22, 0.04, DK, 0.5, -8)
+		R(0.3, 0.7, 0.4, 0.06, DK, 0.5)
+		for _, x in ipairs({ 0.38, 0.46, 0.54, 0.62 }) do Ln(x, 0.67, x, 0.79, 0.02, DK) end
+	elseif id == "ghost" then
+		local gl = Color3.fromRGB(200, 204, 226)
+		R(0.2, 0.12, 0.6, 0.66, WH, 0.5, nil, gl)
+		C(0.2, 0.66, 0.2, WH, gl)
+		C(0.4, 0.68, 0.2, WH, gl)
+		C(0.6, 0.66, 0.2, WH, gl)
+		R(0.22, 0.4, 0.56, 0.4, WH, 0.1)
+		C(0.32, 0.32, 0.12, DK)
+		C(0.56, 0.32, 0.12, DK)
+		C(0.44, 0.5, 0.12, DK)
+	elseif id == "hat" then
+		local pu = Color3.fromRGB(96, 54, 150)
+		R(0.54, 0.06, 0.2, 0.1, pu, 0.4, -28)
+		R(0.38, 0.1, 0.22, 0.2, pu, 0.2)
+		R(0.32, 0.26, 0.36, 0.2, pu, 0.2)
+		R(0.26, 0.42, 0.48, 0.26, pu, 0.2)
+		R(0.27, 0.55, 0.46, 0.08, ORANGE, 0.2)
+		R(0.08, 0.64, 0.84, 0.1, Color3.fromRGB(72, 40, 120), 0.5)
+	elseif id == "moon" then
+		C(0.16, 0.16, 0.68, Color3.fromRGB(255, 226, 120), Color3.fromRGB(210, 170, 40))
+		C(0.38, 0.1, 0.6, WH)
+		C(0.72, 0.18, 0.06, Color3.fromRGB(255, 226, 120))
+		C(0.6, 0.76, 0.05, Color3.fromRGB(255, 226, 120))
+	elseif id == "star" then
+		local yl, ol = Color3.fromRGB(255, 214, 40), Color3.fromRGB(220, 140, 10)
+		R(0.22, 0.22, 0.56, 0.56, yl, 0.08, nil, ol)
+		R(0.22, 0.22, 0.56, 0.56, yl, 0.08, 45, ol)
+		R(0.26, 0.26, 0.48, 0.48, yl, 0.08)
+	elseif id == "eye" then
+		R(0.06, 0.28, 0.88, 0.44, WH, 0.5, nil, DK)
+		C(0.35, 0.3, 0.3, Color3.fromRGB(60, 170, 90), DK)
+		C(0.44, 0.39, 0.12, DK)
+		C(0.48, 0.41, 0.04, WH)
+		Ln(0.2, 0.28, 0.14, 0.14, 0.03, DK)
+		Ln(0.5, 0.26, 0.5, 0.1, 0.03, DK)
+		Ln(0.8, 0.28, 0.86, 0.14, 0.03, DK)
+	elseif id == "bone" then
+		local b = Color3.fromRGB(245, 240, 224)
+		local gl = Color3.fromRGB(180, 170, 140)
+		R(0.2, 0.43, 0.6, 0.14, b, 0.3, nil, gl)
+		C(0.1, 0.32, 0.17, b, gl)
+		C(0.1, 0.51, 0.17, b, gl)
+		C(0.73, 0.32, 0.17, b, gl)
+		C(0.73, 0.51, 0.17, b, gl)
+		R(0.2, 0.43, 0.6, 0.14, b, 0.3)
+	elseif id == "web" then
+		local g = Color3.fromRGB(110, 110, 126)
+		Ln(0.1, 0.5, 0.9, 0.5, 0.025, g)
+		Ln(0.5, 0.1, 0.5, 0.9, 0.025, g)
+		Ln(0.18, 0.18, 0.82, 0.82, 0.025, g)
+		Ln(0.82, 0.18, 0.18, 0.82, 0.025, g)
+		O(0.3, 0.3, 0.4, g, 2)
+		O(0.16, 0.16, 0.68, g, 2)
+		C(0.62, 0.62, 0.1, DK)
+		Ln(0.67, 0.67, 0.78, 0.78, 0.03, DK)
+	elseif id == "candy" then
+		R(0.08, 0.36, 0.26, 0.28, Color3.fromRGB(255, 190, 214), 0.2, 12)
+		R(0.66, 0.36, 0.26, 0.28, Color3.fromRGB(255, 190, 214), 0.2, -12)
+		C(0.26, 0.26, 0.48, Color3.fromRGB(236, 70, 140), Color3.fromRGB(150, 30, 80))
+		Ln(0.36, 0.34, 0.5, 0.2, 0.04, WH)
+		Ln(0.3, 0.5, 0.62, 0.32, 0.04, WH)
+		Ln(0.32, 0.62, 0.7, 0.4, 0.04, WH)
+	elseif id == "tomb" then
+		local gr = Color3.fromRGB(160, 166, 178)
+		R(0.18, 0.78, 0.64, 0.1, Color3.fromRGB(110, 116, 128), 0.2)
+		R(0.26, 0.14, 0.48, 0.68, gr, 0.4, nil, Color3.fromRGB(90, 96, 108))
+		R(0.26, 0.4, 0.48, 0.42, gr, 0.05)
+		R(0.47, 0.28, 0.06, 0.3, DK, 0.2)
+		R(0.39, 0.37, 0.22, 0.06, DK, 0.2)
+		Ln(0.34, 0.72, 0.44, 0.72, 0.03, Color3.fromRGB(100, 140, 80))
+	else -- potion
+		R(0.4, 0.06, 0.2, 0.1, Color3.fromRGB(166, 112, 60), 0.3)
+		R(0.42, 0.14, 0.16, 0.3, Color3.fromRGB(210, 234, 244), 0.15, nil, Color3.fromRGB(120, 150, 170))
+		C(0.2, 0.36, 0.6, Color3.fromRGB(210, 234, 244), Color3.fromRGB(120, 150, 170))
+		C(0.24, 0.52, 0.52, Color3.fromRGB(156, 72, 226))
+		R(0.26, 0.5, 0.48, 0.1, Color3.fromRGB(156, 72, 226), 0.2)
+		C(0.38, 0.6, 0.08, Color3.fromRGB(226, 190, 255))
+		C(0.54, 0.7, 0.06, Color3.fromRGB(226, 190, 255))
+	end
+end
+
+local function buildCard(parent, size, border, id, up)
+	local card = Instance.new("Frame")
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Size = UDim2.fromOffset(size, size)
+	card.BackgroundColor3 = border
+	card.BorderSizePixel = 0
+	card.Parent = parent
+	Instance.new("UICorner", card).CornerRadius = UDim.new(0, math.max(6, math.floor(size * 0.12)))
+
+	local face = Instance.new("Frame")
+	face.AnchorPoint = Vector2.new(0.5, 0.5)
+	face.Position = UDim2.fromScale(0.5, 0.5)
+	face.Size = UDim2.fromScale(0.84, 0.84)
+	face.BackgroundColor3 = Color3.new(1, 1, 1)
+	face.BorderSizePixel = 0
+	face.Visible = up
+	face.Parent = card
+	Instance.new("UICorner", face).CornerRadius = UDim.new(0, math.max(4, math.floor(size * 0.08)))
+	local holder = Instance.new("Frame")
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.fromScale(0.5, 0.5)
+	holder.Size = UDim2.fromScale(0.86, 0.86)
+	holder.BackgroundTransparency = 1
+	holder.Parent = face
+	drawIcon(holder, id)
+
+	local back = Instance.new("Frame")
+	back.AnchorPoint = Vector2.new(0.5, 0.5)
+	back.Position = UDim2.fromScale(0.5, 0.5)
+	back.Size = UDim2.fromScale(0.84, 0.84)
+	back.BackgroundColor3 = Color3.fromRGB(255, 246, 232)
+	back.BorderSizePixel = 0
+	back.Visible = not up
+	back.Parent = card
+	Instance.new("UICorner", back).CornerRadius = UDim.new(0, math.max(4, math.floor(size * 0.08)))
+	for i = 0, 2 do
+		for j = 0, 2 do
+			local d = Instance.new("Frame")
+			d.BorderSizePixel = 0
+			d.BackgroundColor3 = Color3.fromRGB(255, 160, 50)
+			d.Position = UDim2.fromScale(0.08 + i * 0.3, 0.08 + j * 0.3)
+			d.Size = UDim2.fromScale(0.22, 0.22)
+			Instance.new("UICorner", d).CornerRadius = UDim.new(0.5, 0)
+			d.Parent = back
+		end
+	end
+	return card, face, back
+end
+
+local mcPage = Instance.new("Frame")
+mcPage.BackgroundTransparency = 1
+mcPage.Size = UDim2.fromScale(1, 1)
+mcPage.Visible = false
+mcPage.Parent = main
+
+label(mcPage, "MATCHING CARDS", UDim2.fromOffset(S - 80, 22), UDim2.fromOffset(PAD, 6), 17)
+local mcStatus = label(mcPage, "", UDim2.fromOffset(S, 20), UDim2.fromOffset(PAD, 28), 14,
+	Color3.fromRGB(190, 190, 185), Enum.Font.Gotham)
+
+local mcBoard = Instance.new("Frame")
+mcBoard.Size = UDim2.fromOffset(S, S)
+mcBoard.Position = UDim2.fromOffset(PAD, 54)
+mcBoard.BackgroundColor3 = Color3.fromRGB(250, 208, 190)
+mcBoard.BorderSizePixel = 0
+mcBoard.Parent = mcPage
+Instance.new("UICorner", mcBoard).CornerRadius = UDim.new(0, 10)
+
+local mcCards, mcOpen = {}, {}
+local mcLvl, mcMoves, mcMatched, mcPairs, mcBusy, mcWon, mcToken, mcDelay = 1, 0, 0, 2, false, false, 0, 0.9
+
+local function mcUpdate()
+	if mcWon then
+		mcStatus.Text = ("Level %d complete in %d moves!%s"):format(mcLvl, mcMoves, mcLvl < MC_COUNT and " Tap Next" or "")
+	else
+		mcStatus.Text = ("Level %d/%d - Pairs %d/%d - Moves %d"):format(mcLvl, MC_COUNT, mcMatched, mcPairs, mcMoves)
+	end
+end
+
+local function bestDims(total)
+	local bc, br, bs = 2, math.ceil(total / 2), 1e9
+	for cols = 2, 8 do
+		local rows = math.ceil(total / cols)
+		local blanks = cols * rows - total
+		if blanks < cols then
+			local score = blanks * 3 + math.abs(cols - rows)
+			if score < bs then bc, br, bs = cols, rows, score end
+		end
+	end
+	return bc, br
+end
+
+local function flipCard(cd, up)
+	cd.up = up
+	local t1 = TweenService:Create(cd.card, TweenInfo.new(0.09, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ Size = UDim2.fromOffset(0, cd.size) })
+	t1:Play()
+	task.wait(0.1)
+	cd.face.Visible = up
+	cd.back.Visible = not up
+	TweenService:Create(cd.card, TweenInfo.new(0.09, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Size = UDim2.fromOffset(cd.size, cd.size) }):Play()
+end
+
+local function onCard(cd)
+	if mcBusy or cd.up or cd.matched or mcWon then return end
+	mcBusy = true
+	local tk = mcToken
+	flipCard(cd, true)
+	task.wait(0.1)
+	if tk ~= mcToken then return end
+	mcOpen[#mcOpen + 1] = cd
+	if #mcOpen == 2 then
+		mcMoves += 1
+		local a, b = mcOpen[1], mcOpen[2]
+		mcOpen = {}
+		if a.id == b.id then
+			a.matched, b.matched = true, true
+			mcMatched += 1
+			for _, c in ipairs({ a, b }) do
+				local st = Instance.new("UIStroke")
+				st.Color = Color3.fromRGB(60, 200, 90)
+				st.Thickness = 3
+				st.Parent = c.card
+				TweenService:Create(c.card, TweenInfo.new(0.14, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+					{ Size = UDim2.fromOffset(c.size + 8, c.size + 8) }):Play()
+			end
+			task.wait(0.16)
+			if tk ~= mcToken then return end
+			for _, c in ipairs({ a, b }) do
+				TweenService:Create(c.card, TweenInfo.new(0.12), { Size = UDim2.fromOffset(c.size, c.size) }):Play()
+			end
+			if mcMatched == mcPairs then
+				mcWon = true
+				mcUpdate()
+				celebrate(mcLvl < MC_COUNT and "Level complete!" or "All levels complete!")
+				mcBusy = false
+				return
+			end
+		else
+			task.wait(mcDelay)
+			if tk ~= mcToken then return end
+			task.spawn(function() flipCard(a, false) end)
+			flipCard(b, false)
+			task.wait(0.1)
+			if tk ~= mcToken then return end
+		end
+	end
+	mcUpdate()
+	mcBusy = false
+end
+
+local function loadMC(idx)
+	mcToken += 1
+	mcLvl, mcMoves, mcMatched, mcOpen, mcBusy, mcWon = idx, 0, 0, {}, false, false
+	for _, c in ipairs(mcCards) do c.btn:Destroy() end
+	mcCards = {}
+	mcPairs = 2 + math.floor((idx - 1) * 17 / 120)
+	mcDelay = math.max(0.45, 0.95 - idx * 0.004)
+	local rng = Random.new(idx * 7919 + 3)
+	local pool = {}
+	for i, v in ipairs(ICONS) do pool[i] = v end
+	for i = #pool, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		pool[i], pool[j] = pool[j], pool[i]
+	end
+	local ids = {}
+	for i = 1, mcPairs do
+		ids[#ids + 1] = pool[i]
+		ids[#ids + 1] = pool[i]
+	end
+	for i = #ids, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		ids[i], ids[j] = ids[j], ids[i]
+	end
+	local total = #ids
+	local cols, rows = bestDims(total)
+	local cell = math.floor(math.min(S / cols, S / rows))
+	local csz = cell - 8
+	local startY = math.floor((S - rows * cell) / 2)
+	for k, id in ipairs(ids) do
+		local r = math.floor((k - 1) / cols)
+		local c = (k - 1) % cols
+		local rowCount = (r == rows - 1) and (total - cols * (rows - 1)) or cols
+		local sx = math.floor((S - rowCount * cell) / 2)
+		local btn = Instance.new("TextButton")
+		btn.Text = ""
+		btn.AutoButtonColor = false
+		btn.BackgroundTransparency = 1
+		btn.BorderSizePixel = 0
+		btn.Position = UDim2.fromOffset(sx + c * cell, startY + r * cell)
+		btn.Size = UDim2.fromOffset(cell, cell)
+		btn.Parent = mcBoard
+		local border = (rng:NextInteger(0, 1) == 0) and ORANGE or PURPLE
+		local card, face, back = buildCard(btn, csz, border, id, false)
+		card.Position = UDim2.fromScale(0.5, 0.5)
+		local cd = { id = id, btn = btn, card = card, face = face, back = back, size = csz, up = false, matched = false }
+		btn.Activated:Connect(function() onCard(cd) end)
+		mcCards[#mcCards + 1] = cd
+	end
+	mcUpdate()
+end
+
+return { page = mcPage, load = loadMC, lvl = function() return mcLvl end, count = MC_COUNT, build = buildCard }
+end)()
+
+------------------------------------------------------------------
 -- MENU + page switching
 ------------------------------------------------------------------
 local menuPage = Instance.new("Frame")
@@ -2149,6 +3021,7 @@ local function showPage(p)
 	slidePage.Visible = p == "slide"
 	ssPage.Visible = p == "super"
 	FW.page.Visible = p == "word"
+	MC.page.Visible = p == "match"
 	CS.page.Visible = p == "color"
 end
 
@@ -2173,6 +3046,7 @@ mkBtn(chessPage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") en
 mkBtn(slidePage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
 mkBtn(ssPage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
 mkBtn(FW.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(MC.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
 mkBtn(CS.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
 
 -- slide bottom buttons
@@ -2216,6 +3090,45 @@ do
 	b4("< Prev", 2, function() CS.load((CS.lvl() - 2) % CS.count + 1) end)
 	b4("Next >", 3, function() CS.load(CS.lvl() % CS.count + 1) end)
 end
+
+do
+	local w3 = math.floor((S - 16) / 3)
+	local y = 54 + S + 8
+	mkBtn(MC.page, "Restart", PAD, y, w3, 34, function() MC.load(MC.lvl()) end)
+	mkBtn(MC.page, "< Prev", PAD + w3 + 8, y, w3, 34, function() MC.load((MC.lvl() - 2) % MC.count + 1) end)
+	mkBtn(MC.page, "Next >", PAD + (w3 + 8) * 2, y, w3, 34, function() MC.load(MC.lvl() % MC.count + 1) end)
+end
+
+-- "Go to" box: type a level number to jump straight to it (every game has 100+ levels)
+local function addJump(page, getLvl, count, loadFn)
+	local tb = Instance.new("TextBox")
+	tb.Size = UDim2.fromOffset(58, 26)
+	tb.Position = UDim2.fromOffset(PAD + S - 72 - 64, 6)
+	tb.BackgroundColor3 = Color3.fromRGB(62, 60, 56)
+	tb.BorderSizePixel = 0
+	tb.TextColor3 = Color3.new(1, 1, 1)
+	tb.PlaceholderText = "Go to"
+	tb.PlaceholderColor3 = Color3.fromRGB(150, 150, 145)
+	tb.Text = ""
+	tb.TextSize = 13
+	tb.Font = Enum.Font.GothamBold
+	tb.ClearTextOnFocus = true
+	tb.Parent = page
+	Instance.new("UICorner", tb).CornerRadius = UDim.new(0, 8)
+	tb.FocusLost:Connect(function()
+		local n = tonumber(tb.Text)
+		tb.Text = ""
+		if n then
+			n = math.floor(n)
+			if n >= 1 and n <= count then loadFn(n) end
+		end
+	end)
+end
+addJump(slidePage, function() return levelIdx end, #SLEVELS, loadLevel)
+addJump(ssPage, function() return ssLvl end, #SSL, loadSS)
+addJump(CS.page, CS.lvl, CS.count, CS.load)
+addJump(FW.page, FW.lvl, FW.count, FW.load)
+addJump(MC.page, MC.lvl, MC.count, MC.load)
 
 label(menuPage, "BONA GAMES", UDim2.fromOffset(S, 30), UDim2.fromOffset(PAD, 10), 24)
 label(menuPage, "Pick a mini game", UDim2.fromOffset(S, 20), UDim2.fromOffset(PAD, 44), 14,
@@ -2283,14 +3196,14 @@ card(82, Color3.fromRGB(118, 150, 86), "Chess", "Play against a bot. 3 levels, f
 		drawPiece(h2, -N)
 	end)
 
-card(82 + ch + 8, Color3.fromRGB(176, 112, 56), "Sliding Block", "Slide the tiles to build a track and roll the ball home. 5 levels.",
+card(82 + ch + 8, Color3.fromRGB(176, 112, 56), "Sliding Block", "Slide the tiles to build a track and roll the ball home. 120 levels.",
 	function() showPage("slide") end,
 	function(icon)
 		buildTile(icon, { kind = "track", mask = 6, fixed = false })
 		circle(icon, 0.34, 0.34, 0.32, Color3.fromRGB(226, 229, 234), Color3.fromRGB(90, 96, 104)).ZIndex = 5
 	end)
 
-card(82 + (ch + 8) * 2, Color3.fromRGB(60, 64, 74), "Super Slider", "Slide the blocks and bring the big red one to the exit. 6 levels.",
+card(82 + (ch + 8) * 2, Color3.fromRGB(60, 64, 74), "Super Slider", "Slide the blocks and bring the big red one to the exit. 120 levels.",
 	function() showPage("super") end,
 	function(icon, size)
 		local cs = math.floor(size / 4)
@@ -2307,7 +3220,7 @@ card(82 + (ch + 8) * 2, Color3.fromRGB(60, 64, 74), "Super Slider", "Slide the b
 		blk("Y", 1, 2, 1, 1); blk("Y", 2, 2, 1, 1)
 	end)
 
-card(0, Color3.fromRGB(46, 130, 160), "Find Word", "Find the hidden word in the grid of letters. 6 levels.",
+card(0, Color3.fromRGB(46, 130, 160), "Find Word", "Find the hidden word in the grid of letters. 120 levels.",
 	function() showPage("word") end,
 	function(icon, size)
 		local cs2 = math.floor(size / 3)
@@ -2328,8 +3241,45 @@ card(0, Color3.fromRGB(46, 130, 160), "Find Word", "Find the hidden word in the 
 		end
 	end)
 
+card(0, Color3.fromRGB(96, 52, 150), "Color Sort", "Sort the rings so every peg has one colour. 120 levels.",
+	function() showPage("color") end,
+	function(icon, size)
+		local pw = math.floor(size / 3)
+		local rh = math.floor(size * 0.17)
+		local rw = math.floor(pw * 0.84)
+		local stacks = { { "a", "a", "a" }, { "d", "e", "d" }, { "e", "e" } }
+		for k, stack in ipairs(stacks) do
+			local cx = (k - 1) * pw + math.floor(pw / 2)
+			local rod = Instance.new("Frame")
+			rod.AnchorPoint = Vector2.new(0.5, 0)
+			rod.BorderSizePixel = 0
+			rod.BackgroundColor3 = Color3.fromRGB(232, 196, 150)
+			rod.Position = UDim2.fromOffset(cx, math.floor(size * 0.12))
+			rod.Size = UDim2.fromOffset(5, math.floor(size * 0.8))
+			rod.Parent = icon
+			for i, colKey in ipairs(stack) do
+				local r = CS.ring(icon, CS.col[colKey], rw, rh)
+				r.Position = UDim2.fromOffset(cx, size - 6 - i * math.floor(rh * 0.9))
+				r.ZIndex = 3
+			end
+		end
+	end)
+
+card(0, Color3.fromRGB(226, 112, 36), "Matching Cards", "Flip the Halloween cards and find all the pairs. 120 levels.",
+	function() showPage("match") end,
+	function(icon, size)
+		local sz = math.floor(size * 0.62)
+		local c1 = MC.build(icon, sz, Color3.fromRGB(255, 140, 20), "pumpkin", false)
+		c1.Position = UDim2.fromOffset(math.floor(sz * 0.5), size - math.floor(sz * 0.5))
+		c1.Rotation = -8
+		local c2 = MC.build(icon, sz, Color3.fromRGB(112, 70, 170), "skull", true)
+		c2.Position = UDim2.fromOffset(size - math.floor(sz * 0.5), math.floor(sz * 0.5) + 4)
+		c2.Rotation = 8
+	end)
+
 loadLevel(1)
 loadSS(1)
 FW.load(1)
 CS.load(1)
+MC.load(1)
 showPage("menu")
