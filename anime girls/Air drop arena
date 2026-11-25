@@ -1,0 +1,1044 @@
+type Disposable = RBXScriptConnection | Instance | thread | (() -> ())
+type CleanupBag = {
+	items: { Disposable },
+	closed: boolean,
+	add: (self: CleanupBag, item: Disposable) -> Disposable,
+	clean: (self: CleanupBag) -> (),
+	guard: (self: CleanupBag, callback: (...any) -> ()) -> (...any) -> (),
+}
+
+local AIRDROP_ARENA_PLACE_ID = {84007344535700, 93091759101123}
+if not table.find(AIRDROP_ARENA_PLACE_ID, game.PlaceId) then
+	warn(`This script is for Airdrop Arena ({table.concat(AIRDROP_ARENA_PLACE_ID, ", ")}).`)
+	return
+end
+
+local function notifyMissingCapabilities()
+	local StarterGui = game:GetService("StarterGui")
+	task.spawn(function()
+		for _ = 1, 10 do
+			local sent = pcall(function()
+				StarterGui:SetCore("SendNotification", {
+					Title = "BONA HUB - AIRDROP ARENA",
+					Text = "Your current executor is missing required capabilities.",
+					Duration = 6,
+				})
+			end)
+			if sent then
+				return
+			end
+			task.wait()
+		end
+	end)
+end
+
+local getgenv = getgenv
+local hookfunction = hookfunction
+local newcclosure = newcclosure
+local loadstring = loadstring
+local requiredCaps = { getgenv, hookfunction, newcclosure, loadstring }
+local capable = true
+for index = 1, #requiredCaps do
+	if type(requiredCaps[index]) ~= "function" then
+		capable = false
+		break
+	end
+end
+if not capable then
+	notifyMissingCapabilities()
+	return
+end
+
+local env = getgenv()
+if type(env) ~= "table" then
+	notifyMissingCapabilities()
+	return
+end
+
+local function report(message: string)
+	warn(message)
+end
+
+local previous = rawget(env, "silentAimSession")
+if previous ~= nil then
+	local unloadPrevious = if type(previous) == "table" then rawget(previous, "unload") else nil
+	if
+		not (
+			type(previous) == "table"
+			and rawget(previous, "purpose") == "silent-aim"
+			and rawget(previous, "schema") == 1
+			and type(unloadPrevious) == "function"
+		)
+	then
+		report("silent aim session key is occupied")
+		return
+	end
+	local unloaded, problem = pcall(unloadPrevious)
+	if not unloaded then
+		report(`previous session did not unload: {problem}`)
+		return
+	end
+end
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+local localPlayer = Players.LocalPlayer
+local gameScope = game.GameId
+
+local CONFIG = {
+	fieldOfView = 360,
+	maxStuds = 1000,
+	wallCheck = true,
+	aimHead = true,
+	showCircle = true,
+	snapProjectile = true,
+	fireRate = 1,
+	toggleKey = Enum.KeyCode.LeftAlt,
+	halcyonPin = "https://raw.githubusercontent.com/ScriptsForDays/Halcyon/"
+		.. "11afb3c726ea4ebecf4177b27c1b961b26a5f495/dist/Halcyon.luau",
+	halcyonCache = "silentAim/Halcyon.luau",
+}
+
+local SETTINGS_FOLDER = "silentAim"
+local SETTINGS_VERSION = 1
+local SETTINGS_FIELDS = {
+	fieldOfView = { min = 40, max = 700 },
+	wallCheck = {},
+	aimHead = {},
+	showCircle = {},
+	snapProjectile = {},
+	fireRate = { min = 1, max = 20 },
+	lockCursor = {},
+	silentAim = {},
+}
+
+local TARGETS = {
+	scripts = { "Scripts" },
+	model = { "Scripts", "Model" },
+	manager = { "Scripts", "Manager" },
+	util = { "Scripts", "Util" },
+	enums = { "Scripts", "Enums" },
+}
+
+local session
+local preferences = {
+	fieldOfView = CONFIG.fieldOfView,
+	wallCheck = CONFIG.wallCheck,
+	aimHead = CONFIG.aimHead,
+	showCircle = CONFIG.showCircle,
+	snapProjectile = CONFIG.snapProjectile,
+	fireRate = CONFIG.fireRate,
+	lockCursor = false,
+	silentAim = false,
+}
+
+local Bag = {}
+
+local function release(item: Disposable)
+	if type(item) == "function" then
+		item()
+	elseif type(item) == "thread" then
+		if item ~= coroutine.running() and coroutine.status(item) ~= "dead" then
+			task.cancel(item)
+		end
+	elseif typeof(item) == "Instance" then
+		item:Destroy()
+	else
+		item:Disconnect()
+	end
+end
+
+function Bag.add(self: CleanupBag, item: Disposable): Disposable
+	if self.closed then
+		release(item)
+	else
+		table.insert(self.items, item)
+	end
+	return item
+end
+
+function Bag.clean(self: CleanupBag)
+	self.closed = true
+	local items = self.items
+	self.items = {}
+	for index = #items, 1, -1 do
+		xpcall(release, function(problem)
+			report(`cleanup: {problem}`)
+		end, items[index])
+	end
+end
+
+function Bag.guard(self: CleanupBag, callback: (...any) -> ()): (...any) -> ()
+	return function(...)
+		if self.closed or not session.alive then
+			return
+		end
+		callback(...)
+	end
+end
+
+function Bag.new(): CleanupBag
+	return {
+		items = {},
+		closed = false,
+		add = Bag.add,
+		clean = Bag.clean,
+		guard = Bag.guard,
+	}
+end
+
+local root = Bag.new()
+local originals: { [string]: (...any) -> ...any } = {}
+local hooked = {}
+
+local function unload()
+	if not session.alive then
+		return
+	end
+	session.alive = false
+	session.on = false
+	session.aimPosition = nil
+	session.aimPart = nil
+	for index = #hooked, 1, -1 do
+		local record = hooked[index]
+		if record.target and record.original then
+			pcall(hookfunction, record.target, record.original)
+		end
+	end
+	table.clear(hooked)
+	table.clear(originals)
+	root:clean()
+	if rawequal(rawget(env, "silentAimSession"), session) then
+		rawset(env, "silentAimSession", nil)
+	end
+end
+
+session = {
+	purpose = "silent-aim",
+	schema = 1,
+	alive = true,
+	on = false,
+	aimPosition = nil,
+	aimPart = nil,
+	unload = unload,
+}
+rawset(env, "silentAimSession", session)
+
+local function resolve(parent: Instance, path: { string }, timeout: number): Instance?
+	local node = parent
+	for _, name in path do
+		local child = node:WaitForChild(name, timeout)
+		if not child then
+			return nil
+		end
+		node = child
+	end
+	return node
+end
+
+local function acceptSetting(key: string, value: any): boolean
+	local default = preferences[key]
+	if type(default) ~= type(value) then
+		return false
+	end
+	local field = SETTINGS_FIELDS[key]
+	if not field then
+		return false
+	end
+	if type(value) == "number" then
+		if value ~= value or math.abs(value) == math.huge then
+			return false
+		end
+		if field.min ~= nil and value < field.min then
+			return false
+		end
+		if field.max ~= nil and value > field.max then
+			return false
+		end
+	end
+	return true
+end
+
+local settingsStatus = "unavailable"
+local settingsProblem = "Settings storage is unavailable"
+do
+	local readfile, writefile, isfile, isfolder, makefolder =
+		readfile, writefile, isfile, isfolder, makefolder
+	local persistent = isfile
+		and writefile
+		and readfile
+		and isfolder
+		and makefolder
+		and gameScope > 0
+	if persistent then
+		local path = `{SETTINGS_FOLDER}/{gameScope}.json`
+		local loaded, body = pcall(function()
+			return if isfile(path) then readfile(path) else nil
+		end)
+		if not loaded then
+			settingsStatus, settingsProblem = "unsaved", "Settings file could not be read"
+		elseif body ~= nil then
+			local decoded, stored = pcall(HttpService.JSONDecode, HttpService, body)
+			if
+				decoded
+				and type(stored) == "table"
+				and type(stored.values) == "table"
+				and stored.version == SETTINGS_VERSION
+				and (stored.gameId == nil or stored.gameId == gameScope)
+			then
+				for key in preferences do
+					if acceptSetting(key, stored.values[key]) then
+						preferences[key] = stored.values[key]
+					end
+				end
+				settingsStatus, settingsProblem = "saved", nil
+			else
+				settingsStatus, settingsProblem = "unsaved", "Settings file is malformed"
+			end
+		else
+			settingsStatus, settingsProblem = "ready", nil
+		end
+	end
+
+	function session.savePreferences(): boolean
+		if not persistent then
+			return false
+		end
+		local snapshot = {}
+		for key, value in preferences do
+			if not acceptSetting(key, value) then
+				settingsStatus, settingsProblem = "unsaved", `Invalid settings value: {key}`
+				report(settingsProblem)
+				return false
+			end
+			snapshot[key] = value
+		end
+		local written = pcall(function()
+			if not isfolder(SETTINGS_FOLDER) then
+				makefolder(SETTINGS_FOLDER)
+			end
+			writefile(`{SETTINGS_FOLDER}/{gameScope}.json`, HttpService:JSONEncode({
+				version = SETTINGS_VERSION,
+				gameId = gameScope,
+				values = snapshot,
+			}))
+		end)
+		if written then
+			settingsStatus, settingsProblem = "saved", nil
+		else
+			settingsStatus, settingsProblem = "unsaved", "Settings file could not be saved"
+			report(settingsProblem)
+		end
+		return written
+	end
+end
+
+if settingsStatus == "unsaved" and settingsProblem then
+	report(settingsProblem)
+end
+
+local scriptsFolder = resolve(ReplicatedStorage, TARGETS.scripts, 8)
+if not scriptsFolder then
+	report("silent aim stopped: ReplicatedStorage.Scripts is missing")
+	session.unload()
+	return
+end
+
+local modelFolder = resolve(ReplicatedStorage, TARGETS.model, 8)
+local managerFolder = resolve(ReplicatedStorage, TARGETS.manager, 8)
+local utilFolder = resolve(ReplicatedStorage, TARGETS.util, 8)
+local enumsFolder = resolve(ReplicatedStorage, TARGETS.enums, 8)
+local blasterModule = modelFolder and modelFolder:WaitForChild("Blaster", 8)
+local projectileFolder = managerFolder and managerFolder:WaitForChild("ProjectileManager", 8)
+if not (modelFolder and managerFolder and utilFolder and enumsFolder and blasterModule and projectileFolder) then
+	report("silent aim stopped: blaster modules are missing")
+	session.unload()
+	return
+end
+
+local Blaster = require(blasterModule)
+local ExplosiveBlaster = require(blasterModule:WaitForChild("ExplosiveBlaster", 8))
+local RicoLaserBlaster = require(blasterModule:WaitForChild("RicoLaserBlaster", 8))
+local RocketBlaster = require(blasterModule:WaitForChild("RocketBlaster", 8))
+local DaggerBlaster = require(blasterModule:WaitForChild("DaggerBlaster", 8))
+local BlasterUtility = require(utilFolder:WaitForChild("BlasterUtility", 8))
+local Helper = require(utilFolder:WaitForChild("Helper", 8))
+local EntityManager = require(managerFolder:WaitForChild("EntityManager", 8))
+local CustomEnum = require(enumsFolder:WaitForChild("CustomEnum", 8))
+local ProjectileManager = require(projectileFolder)
+local RocketProjectile = require(projectileFolder:WaitForChild("RocketProjectile", 8))
+
+if type(Blaster) ~= "table" or type(Blaster.GetRayResults) ~= "function" then
+	report("silent aim stopped: Blaster.GetRayResults is missing")
+	session.unload()
+	return
+end
+
+local BattlefieldHelper = Helper.BattlefieldHelper
+local EntityHelper = Helper.EntityHelper
+local EntityType = CustomEnum.EntityType
+
+local visibilityParams = RaycastParams.new()
+visibilityParams.FilterType = Enum.RaycastFilterType.Exclude
+local stickyId = nil
+
+local function isLocalBlaster(blaster): boolean
+	return type(blaster) == "table" and type(blaster.IsLocalPlayer) == "function" and blaster:IsLocalPlayer() == true
+end
+
+local function aimOrigin(): CFrame?
+	local camera = Workspace.CurrentCamera
+	local aim = session.aimPosition
+	if not camera or typeof(aim) ~= "Vector3" then
+		return nil
+	end
+	return CFrame.lookAt(camera.CFrame.Position, aim)
+end
+
+local function fillDirections(origin: CFrame, count: number, range: number): { Vector3 }
+	local look = origin.LookVector * range
+	local directions = table.create(count)
+	for index = 1, count do
+		directions[index] = look
+	end
+	return directions
+end
+
+local function redirectBase(blaster, leftMuzzle)
+	local origin = aimOrigin()
+	if not origin then
+		return originals.base(blaster, leftMuzzle)
+	end
+	blaster:Recoil()
+	blaster:PlayFireVFX(nil, leftMuzzle)
+	local range = blaster:GetRange()
+	local directions = fillDirections(origin, blaster:GetRaysPerShot(), range)
+	return origin, directions, BlasterUtility.CastRays(localPlayer, origin.Position, directions, blaster:GetRayRadius())
+end
+
+local function redirectExplosive(blaster, leftMuzzle)
+	local origin = aimOrigin()
+	if not origin then
+		return originals.explosive(blaster, leftMuzzle)
+	end
+	blaster:Recoil()
+	blaster:PlayFireVFX(nil, leftMuzzle)
+	local range = blaster:GetRange()
+	local directions = fillDirections(origin, blaster:GetRaysPerShot(), range)
+	local config = blaster.config
+	return origin, directions, BlasterUtility.CastExplosiveRays(
+		localPlayer,
+		origin.Position,
+		directions,
+		blaster:GetRayRadius(),
+		config and config.explosionRadius or 20
+	)
+end
+
+local function redirectRico(blaster, leftMuzzle)
+	local origin = aimOrigin()
+	if not origin then
+		return originals.rico(blaster, leftMuzzle)
+	end
+	blaster:Recoil()
+	blaster:PlayFireVFX(nil, leftMuzzle)
+	local range = blaster:GetRange()
+	local directions = fillDirections(origin, blaster:GetRaysPerShot(), range)
+	local results = BlasterUtility.CastRays(localPlayer, origin.Position, directions, blaster:GetRayRadius())
+	local look = origin.LookVector
+	for _, result in results do
+		result.segStart = origin.Position
+		result.segDirection = look
+	end
+	return origin, directions, results
+end
+
+local function redirectRocket(blaster, leftMuzzle)
+	local origin = aimOrigin()
+	if not origin then
+		return originals.rocket(blaster, leftMuzzle)
+	end
+	blaster:Recoil()
+	blaster:PlayFireVFX(nil, leftMuzzle)
+	local range = blaster:GetRange()
+	local count = blaster:GetRaysPerShot()
+	local directions = fillDirections(origin, count, range)
+	local results = table.create(count)
+	for index = 1, count do
+		results[index] = {
+			taggedEntityId = nil,
+			distance = range,
+		}
+	end
+	return origin, directions, results
+end
+
+local function redirectDagger(blaster, ...)
+	local origin = aimOrigin()
+	if not origin then
+		return originals.dagger(blaster, ...)
+	end
+	blaster:Recoil()
+	local range = blaster:GetRange()
+	local directions = fillDirections(origin, 1, range)
+	local results = BlasterUtility.CastRays(localPlayer, origin.Position, directions, 0.2, nil, true)
+	if not results[1] or not results[1].taggedEntityId then
+		results = BlasterUtility.CastRays(localPlayer, origin.Position, directions, blaster:GetRayRadius(), nil, true)
+	end
+	return origin, directions, results
+end
+
+local function wrapShot(kind: string, redirect)
+	return function(blaster, ...)
+		if not (session.alive and session.on and session.aimPosition and isLocalBlaster(blaster)) then
+			return originals[kind](blaster, ...)
+		end
+		local ok, origin, directions, results = pcall(redirect, blaster, ...)
+		if ok then
+			return origin, directions, results
+		end
+		return originals[kind](blaster, ...)
+	end
+end
+
+local function installHook(target, kind: string, wrapper)
+	if type(target) ~= "function" then
+		return
+	end
+	local original
+	original = hookfunction(target, newcclosure(function(...)
+		return wrapper(...)
+	end))
+	originals[kind] = original
+	table.insert(hooked, {
+		target = target,
+		original = original,
+	})
+end
+
+installHook(Blaster.GetRayResults, "base", wrapShot("base", redirectBase))
+installHook(ExplosiveBlaster.GetRayResults, "explosive", wrapShot("explosive", redirectExplosive))
+installHook(RicoLaserBlaster.GetRayResults, "rico", wrapShot("rico", redirectRico))
+installHook(RocketBlaster.GetRayResults, "rocket", wrapShot("rocket", redirectRocket))
+installHook(DaggerBlaster.GetRayResults, "dagger", wrapShot("dagger", redirectDagger))
+
+if type(ProjectileManager) == "table" and type(ProjectileManager.CreateProjectile) == "function" then
+	installHook(ProjectileManager.CreateProjectile, "createProjectile", function(manager, spawn, ...)
+		if
+			session.alive
+			and session.on
+			and preferences.snapProjectile
+			and session.aimPosition
+			and type(spawn) == "table"
+			and spawn.isLocal
+		then
+			local aim = session.aimPosition
+			local start = spawn.startPosition
+			if typeof(aim) == "Vector3" and typeof(start) == "Vector3" then
+				local offset = aim - start
+				if offset.Magnitude > 0 then
+					local range = if typeof(spawn.direction) == "Vector3" then spawn.direction.Magnitude else offset.Magnitude
+					spawn.direction = offset.Unit * range
+					spawn.startPosition = aim - offset.Unit * 2
+					spawn.endPosition = aim
+				end
+			end
+		end
+		return originals.createProjectile(manager, spawn, ...)
+	end)
+end
+
+if type(Blaster.GetRateOfFire) == "function" then
+	installHook(Blaster.GetRateOfFire, "getRateOfFire", function(blaster, ...)
+		local rate = originals.getRateOfFire(blaster, ...)
+		if
+			not (
+				session.alive
+				and isLocalBlaster(blaster)
+				and preferences.fireRate > 1
+				and type(rate) == "number"
+				and rate > 0
+			)
+		then
+			return rate
+		end
+		return rate * preferences.fireRate
+	end)
+end
+
+if type(RocketProjectile) == "table" and type(RocketProjectile.__SetTrajectory) == "function" then
+	installHook(RocketProjectile.__SetTrajectory, "setTrajectory", function(rocket, spawn, ...)
+		if
+			session.alive
+			and session.on
+			and preferences.snapProjectile
+			and session.aimPosition
+			and type(rocket) == "table"
+			and rocket.isLocal
+			and type(spawn) == "table"
+		then
+			local aim = session.aimPosition
+			local start = spawn.startPosition
+			if typeof(aim) == "Vector3" and typeof(start) == "Vector3" then
+				local offset = aim - start
+				if offset.Magnitude > 0 then
+					local range = if typeof(spawn.direction) == "Vector3" then spawn.direction.Magnitude else offset.Magnitude
+					spawn.direction = offset.Unit * range
+					spawn.startPosition = aim - offset.Unit * 2
+					spawn.endPosition = aim
+				end
+			end
+		end
+		return originals.setTrajectory(rocket, spawn, ...)
+	end)
+end
+
+local function aimPart(entity): BasePart?
+	if not entity then
+		return nil
+	end
+	if preferences.aimHead then
+		local head = entity:FindFirstChild("Head")
+		if head and head:IsA("BasePart") then
+			return head
+		end
+	end
+	local primary = entity.PrimaryPart
+	if primary and primary:IsA("BasePart") then
+		return primary
+	end
+	return nil
+end
+
+local function isVisible(camera: Camera, part: BasePart): boolean
+	local origin = camera.CFrame.Position
+	visibilityParams.FilterDescendantsInstances = { localPlayer.Character, camera }
+	local hit = Workspace:Raycast(origin, (part.Position - origin) * 1.05, visibilityParams)
+	return hit == nil or hit.Instance:IsDescendantOf(part.Parent)
+end
+
+local function screenGap(camera: Camera, part: BasePart, point: Vector2): number?
+	if (part.Position - camera.CFrame.Position).Magnitude > CONFIG.maxStuds then
+		return nil
+	end
+	local screen, onScreen = camera:WorldToViewportPoint(part.Position)
+	if not onScreen or screen.Z <= 0 then
+		return nil
+	end
+	local gap = (Vector2.new(screen.X, screen.Y) - point).Magnitude
+	if gap > preferences.fieldOfView then
+		return nil
+	end
+	if preferences.wallCheck and not isVisible(camera, part) then
+		return nil
+	end
+	return gap
+end
+
+local function consider(entityId, camera: Camera, point: Vector2, nearestId, nearestPart: BasePart?, nearestGap: number)
+	if entityId == localPlayer.UserId then
+		return nearestId, nearestPart, nearestGap
+	end
+	local entity = EntityManager:GetInstance(entityId)
+	if not (entity and BattlefieldHelper.IsFoeFaction(entity) and EntityHelper.IsLife(entity)) then
+		return nearestId, nearestPart, nearestGap
+	end
+	local part = aimPart(entity)
+	local gap = part and screenGap(camera, part, point)
+	if gap and gap < nearestGap then
+		return entityId, part, gap
+	end
+	return nearestId, nearestPart, nearestGap
+end
+
+local function pickTarget()
+	local camera = Workspace.CurrentCamera
+	if not camera then
+		stickyId = nil
+		session.aimPosition = nil
+		session.aimPart = nil
+		return
+	end
+	local viewport = camera.ViewportSize
+	local point = Vector2.new(viewport.X / 2, viewport.Y / 2)
+	if stickyId then
+		local entity = EntityManager:GetInstance(stickyId)
+		local part = entity and aimPart(entity)
+		if
+			entity
+			and BattlefieldHelper.IsFoeFaction(entity)
+			and EntityHelper.IsLife(entity)
+			and part
+			and screenGap(camera, part, point)
+		then
+			session.aimPart = part
+			session.aimPosition = part.Position
+			return
+		end
+		stickyId = nil
+	end
+	local nearestId = nil
+	local nearestPart = nil
+	local nearestGap = math.huge
+	local players = EntityManager:GetEntityIds(EntityType.player)
+	if players then
+		for _, entityId in ipairs(players) do
+			nearestId, nearestPart, nearestGap = consider(entityId, camera, point, nearestId, nearestPart, nearestGap)
+		end
+	end
+	local monsters = EntityManager:GetEntityIds(EntityType.monster)
+	if monsters then
+		for _, entityId in ipairs(monsters) do
+			nearestId, nearestPart, nearestGap = consider(entityId, camera, point, nearestId, nearestPart, nearestGap)
+		end
+	end
+	stickyId = nearestId
+	session.aimPart = nearestPart
+	session.aimPosition = if nearestPart then nearestPart.Position else nil
+end
+
+local fovCircle = nil
+do
+	local DrawingNew = Drawing and Drawing.new
+	if type(DrawingNew) == "function" then
+		local created, circle = pcall(DrawingNew, "Circle")
+		if created and circle then
+			fovCircle = circle
+			fovCircle.Thickness = 1
+			fovCircle.NumSides = 64
+			fovCircle.Filled = false
+			fovCircle.Color = Color3.fromRGB(235, 235, 235)
+			fovCircle.Transparency = 1
+			fovCircle.Visible = false
+			root:add(function()
+				fovCircle.Visible = false
+				fovCircle:Remove()
+			end)
+		end
+	end
+end
+
+local function setArmed(on: boolean)
+	session.on = on
+	if not on then
+		stickyId = nil
+		session.aimPosition = nil
+		session.aimPart = nil
+		if fovCircle then
+			fovCircle.Visible = false
+		end
+	end
+end
+
+root:add(RunService.RenderStepped:Connect(root:guard(function()
+	if not session.on then
+		return
+	end
+	pickTarget()
+	if fovCircle then
+		local camera = Workspace.CurrentCamera
+		if camera and preferences.showCircle then
+			local viewport = camera.ViewportSize
+			fovCircle.Position = Vector2.new(viewport.X / 2, viewport.Y / 2)
+			fovCircle.Radius = preferences.fieldOfView
+			fovCircle.Visible = true
+		else
+			fovCircle.Visible = false
+		end
+	end
+end)))
+
+local function readHalcyonSource(): string?
+	local isfile, readfile, writefile, isfolder, makefolder =
+		isfile, readfile, writefile, isfolder, makefolder
+	if isfile and readfile then
+		local cached, body = pcall(function()
+			return if isfile(CONFIG.halcyonCache) then readfile(CONFIG.halcyonCache) else nil
+		end)
+		if cached and type(body) == "string" and #body > 0 then
+			return body
+		end
+	end
+	local request = request or http_request
+	if not request then
+		return nil
+	end
+	local fetched, response = pcall(request, {
+		Url = CONFIG.halcyonPin,
+		Method = "GET",
+	})
+	if
+		not (
+			fetched
+			and type(response) == "table"
+			and response.Success
+			and type(response.Body) == "string"
+			and #response.Body > 0
+		)
+	then
+		return nil
+	end
+	local body = response.Body
+	if writefile and isfolder and makefolder then
+		pcall(function()
+			if not isfolder(SETTINGS_FOLDER) then
+				makefolder(SETTINGS_FOLDER)
+			end
+			writefile(CONFIG.halcyonCache, body)
+		end)
+	end
+	return body
+end
+
+local function startHub(): boolean
+	local source = readHalcyonSource()
+	if not source then
+		return false
+	end
+	local compiled, compileProblem = loadstring(source, "Halcyon")
+	if not compiled then
+		report(`Halcyon did not compile: {compileProblem}`)
+		return false
+	end
+	local loaded, library = pcall(compiled)
+	if not (loaded and type(library) == "table" and type(library.CreateWindow) == "function") then
+		report("Halcyon failed to load")
+		return false
+	end
+
+	local announceToggles = false
+	local window = library:CreateWindow({
+		Title = "BONA - AIRDROP ARENA",
+		Icon = "crosshair",
+		Folder = SETTINGS_FOLDER,
+		Size = Vector2.new(620, 460),
+		TabStyle = "Rail",
+		Theme = "Onyx",
+		OpenButton = true,
+		MinimizeStyle = "Pill",
+		ToggleKey = Enum.KeyCode.RightShift,
+	})
+	if not window then
+		return false
+	end
+
+	local function notifyToggle(name: string, on: boolean)
+		if not announceToggles then
+			return
+		end
+		window:Notify({
+			Title = "YS HUB - AIRDROP ARENA",
+			Content = if on then `{name} enabled` else `{name} disabled`,
+			Kind = if on then "success" else "info",
+			Duration = 3,
+		})
+	end
+
+	local function persistConfig()
+		if not announceToggles then
+			return
+		end
+		local saved, problem = pcall(function()
+			local name = window:GetAutoload()
+			if type(name) ~= "string" or name == "" then
+				name = "current"
+				local pinned, pinProblem = window:SetAutoload(name)
+				if not pinned then
+					error(pinProblem or "autoload not set", 0)
+				end
+			end
+			local wrote, writeProblem = window:SaveConfig(name)
+			if not wrote then
+				error(writeProblem or "config not saved", 0)
+			end
+		end)
+		if not saved then
+			report(`config not saved: {problem}`)
+		end
+	end
+
+	local function keepSetting(key: string, name: string)
+		return function(on: boolean)
+			preferences[key] = on
+			session.savePreferences()
+			persistConfig()
+			notifyToggle(name, on)
+		end
+	end
+
+	local hubWindow = window
+	window.OnUnload:Connect(function()
+		hubWindow = nil
+		if session.alive then
+			session.unload()
+		end
+	end)
+	root:add(function()
+		local current = hubWindow
+		hubWindow = nil
+		if current then
+			pcall(function()
+				current:Unload()
+			end)
+		end
+	end)
+
+	local UserInputService = game:GetService("UserInputService")
+	local savedMouseBehavior = nil
+	local savedMouseIcon = nil
+	local silentAim
+
+	local function restoreCursor()
+		if savedMouseBehavior ~= nil then
+			UserInputService.MouseBehavior = savedMouseBehavior
+			if savedMouseIcon ~= nil then
+				UserInputService.MouseIconEnabled = savedMouseIcon
+			end
+			savedMouseBehavior = nil
+			savedMouseIcon = nil
+		end
+	end
+
+	local function applyCursorLock()
+		if not (preferences.lockCursor and window.Visible) then
+			restoreCursor()
+			return
+		end
+		if savedMouseBehavior == nil then
+			savedMouseBehavior = UserInputService.MouseBehavior
+			savedMouseIcon = UserInputService.MouseIconEnabled
+		end
+		if UserInputService.MouseBehavior ~= Enum.MouseBehavior.Default then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		end
+		if not UserInputService.MouseIconEnabled then
+			UserInputService.MouseIconEnabled = true
+		end
+	end
+
+	root:add(restoreCursor)
+	root:add(RunService.Heartbeat:Connect(root:guard(function()
+		if preferences.lockCursor then
+			applyCursorLock()
+		end
+	end)))
+
+	local combat = window:Tab({
+		Title = "Combat",
+		Icon = "crosshair",
+	})
+	local aim = combat:Section({ Title = "Aim", Icon = "target" })
+	silentAim = aim:Toggle({
+		Title = "Silent aim",
+		Default = preferences.silentAim,
+		Flag = "silentAim",
+		Keybind = {
+			Default = CONFIG.toggleKey,
+			Mode = "Toggle",
+			Flag = "silentAimKey",
+		},
+		Callback = function(on)
+			setArmed(on)
+			preferences.silentAim = on
+			session.savePreferences()
+			persistConfig()
+			notifyToggle("Silent aim", on)
+		end,
+	})
+	aim:Slider({
+		Title = "Field of view",
+		Min = 40,
+		Max = 700,
+		Default = preferences.fieldOfView,
+		Suffix = " px",
+		Live = false,
+		Flag = "fieldOfView",
+		Callback = function(value)
+			preferences.fieldOfView = value
+			session.savePreferences()
+			persistConfig()
+		end,
+	})
+	local targeting = aim:Group({ Columns = 2 })
+	targeting:Toggle({
+		Title = "Wall check",
+		Default = preferences.wallCheck,
+		Flag = "wallCheck",
+		Callback = keepSetting("wallCheck", "Wall check"),
+	})
+	targeting:Toggle({
+		Title = "Aim head",
+		Default = preferences.aimHead,
+		Flag = "aimHead",
+		Callback = keepSetting("aimHead", "Aim head"),
+	})
+
+	local blasterSection = combat:Section({ Title = "Blaster", Icon = "zap", Side = "Right" })
+	blasterSection:Slider({
+		Title = "Firerate",
+		Min = 1,
+		Max = 20,
+		Default = preferences.fireRate,
+		Suffix = "x",
+		Live = false,
+		Flag = "fireRate",
+		Callback = function(value)
+			preferences.fireRate = value
+			session.savePreferences()
+			persistConfig()
+		end,
+	})
+
+	local extras = combat:Section({ Title = "Visuals", Icon = "eye" })
+	local circleToggle = extras:Toggle({
+		Title = "FOV circle",
+		Default = preferences.showCircle,
+		Flag = "showCircle",
+		Callback = keepSetting("showCircle", "FOV circle"),
+	})
+	if not fovCircle then
+		circleToggle:Lock("Drawing is unavailable", "eye-off")
+	end
+	extras:Toggle({
+		Title = "Snap projectile",
+		Default = preferences.snapProjectile,
+		Flag = "snapProjectile",
+		Callback = keepSetting("snapProjectile", "Snap projectile"),
+	})
+
+	window:QuickBar({ Items = { silentAim } })
+	local settings = window:SettingsTab()
+	settings:Toggle({
+		Title = "Lock Cursor To UI",
+		Info = "Locks your mouse on the UI while the menu is open.",
+		Default = preferences.lockCursor,
+		Flag = "lockCursor",
+		Callback = function(on)
+			preferences.lockCursor = on
+			session.savePreferences()
+			persistConfig()
+			applyCursorLock()
+			notifyToggle("Lock Cursor To UI", on)
+		end,
+	})
+	window:LoadAutoload()
+	local armed = silentAim:Get()
+	if type(armed) == "boolean" then
+		setArmed(armed)
+		preferences.silentAim = armed
+	end
+	task.defer(function()
+		announceToggles = true
+		persistConfig()
+	end)
+	return true
+end
+
+if not startHub() then
+	notifyMissingCapabilities()
+	session.unload()
+	return
+end
