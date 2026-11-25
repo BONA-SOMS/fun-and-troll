@@ -1,0 +1,182 @@
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("ReplicatedStorage")
+
+local lp = Players.LocalPlayer
+local gui = lp:WaitForChild("PlayerGui")
+
+local old = gui:FindFirstChild("RainbowSpam")
+if old then old:Destroy() end
+
+local remote = RS:WaitForChild("SpawnRainbowBlock")
+
+local autoOn = false
+local count = 0
+
+local function new(cls, props, parent)
+    local o = Instance.new(cls)
+    for k,v in pairs(props or {}) do o[k]=v end
+    o.Parent = parent
+    return o
+end
+
+local sg = new("ScreenGui",{
+    Name="RainbowSpam",
+    ResetOnSpawn=false,
+    IgnoreGuiInset=true,
+    DisplayOrder=9999,
+},gui)
+
+local win = new("Frame",{
+    AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.fromScale(.5,.5),
+    Size=UDim2.fromOffset(220,160),
+    BackgroundColor3=Color3.fromRGB(25,25,25),
+    BorderSizePixel=0,
+},sg)
+new("UICorner",{CornerRadius=UDim.new(0,10)},win)
+new("UIStroke",{Color=Color3.fromRGB(60,60,60),Thickness=1},win)
+
+local titleLbl = new("TextLabel",{
+    Size=UDim2.new(1,0,0,36),
+    BackgroundColor3=Color3.fromRGB(18,18,18),
+    BorderSizePixel=0,
+    Text="rainbow block",
+    TextColor3=Color3.fromRGB(220,220,220),
+    Font=Enum.Font.GothamBold,
+    TextSize=14,
+    TextXAlignment=Enum.TextXAlignment.Center,
+},win)
+new("UICorner",{CornerRadius=UDim.new(0,10)},titleLbl)
+
+-- rainbow title colour loop
+local hue = 0
+task.spawn(function()
+    while titleLbl.Parent do
+        hue = (hue + 0.005) % 1
+        titleLbl.TextColor3 = Color3.fromHSV(hue, 0.7, 1)
+        task.wait()
+    end
+end)
+
+local countLbl = new("TextLabel",{
+    Position=UDim2.new(0,0,0,42),
+    Size=UDim2.new(1,0,0,24),
+    BackgroundTransparency=1,
+    Text="fired: 0",
+    TextColor3=Color3.fromRGB(120,120,120),
+    Font=Enum.Font.GothamMedium,
+    TextSize=12,
+    TextXAlignment=Enum.TextXAlignment.Center,
+},win)
+
+local spawnBtn = new("TextButton",{
+    Position=UDim2.new(0,14,0,74),
+    Size=UDim2.new(1,-28,0,32),
+    BackgroundColor3=Color3.fromRGB(40,40,40),
+    BorderSizePixel=0,
+    Text="spawn once",
+    TextColor3=Color3.fromRGB(210,210,210),
+    Font=Enum.Font.GothamMedium,
+    TextSize=13,
+    AutoButtonColor=false,
+},win)
+new("UICorner",{CornerRadius=UDim.new(0,8)},spawnBtn)
+
+local autoBtn = new("TextButton",{
+    Position=UDim2.new(0,14,0,114),
+    Size=UDim2.new(1,-28,0,32),
+    BackgroundColor3=Color3.fromRGB(40,40,40),
+    BorderSizePixel=0,
+    Text="auto: off",
+    TextColor3=Color3.fromRGB(180,180,180),
+    Font=Enum.Font.GothamMedium,
+    TextSize=13,
+    AutoButtonColor=false,
+},win)
+new("UICorner",{CornerRadius=UDim.new(0,8)},autoBtn)
+
+-- DRAG (PC + MOBILE)
+local dragging = false
+local dragStart
+local startPos
+local activeTouch
+
+titleLbl.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPos = win.Position
+
+        if input.UserInputType == Enum.UserInputType.Touch then
+            activeTouch = input
+        end
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if not dragging then return end
+
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseMovement
+    local isTouch = input == activeTouch
+
+    if isMouse or isTouch then
+        local delta = input.Position - dragStart
+
+        win.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input == activeTouch then
+        dragging = false
+        activeTouch = nil
+    end
+end)
+
+local function fire()
+    remote:FireServer()
+    count += 1
+    countLbl.Text = "fired: "..count
+end
+
+local function setAuto(v)
+    autoOn = v
+
+    if v then
+        autoBtn.Text = "auto: ON"
+        autoBtn.BackgroundColor3 = Color3.fromRGB(50,120,50)
+
+        task.spawn(function()
+            while autoOn and sg.Parent do
+                fire()
+                task.wait()
+            end
+        end)
+    else
+        autoBtn.Text = "auto: off"
+        autoBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    end
+end
+
+spawnBtn.MouseButton1Click:Connect(fire)
+
+autoBtn.MouseButton1Click:Connect(function()
+    setAuto(not autoOn)
+end)
+
+UIS.InputBegan:Connect(function(inp,processed)
+    if not processed and inp.KeyCode == Enum.KeyCode.RightShift then
+        setAuto(false)
+        sg:Destroy()
+    end
+end)
