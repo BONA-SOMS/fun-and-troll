@@ -470,21 +470,239 @@ gui.DisplayOrder = 50
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = pg
 
-local vp = workspace.CurrentCamera.ViewportSize
-if vp.X < 100 then vp = Vector2.new(800, 600) end
-local S = math.clamp(math.floor(math.min(vp.X - 24, vp.Y - 150) / 8) * 8, 240, 560)
-local PAD = 10
+local WINDOW_SCALE = 1 -- make the whole window smaller or bigger (for example 0.85 or 1.1)
 
+-- use the real GUI size of this device so the whole window always fits on the screen
+for _ = 1, 40 do
+	if gui.AbsoluteSize.X > 100 then break end
+	task.wait()
+end
+local vp = workspace.CurrentCamera.ViewportSize
+local gs = gui.AbsoluteSize
+if gs.X > 100 and gs.Y > 100 then
+	vp = (vp.X > 100) and Vector2.new(math.min(vp.X, gs.X), math.min(vp.Y, gs.Y)) or gs
+end
+if vp.X < 100 then vp = Vector2.new(800, 600) end
+
+-- BONA-FOX blue neon glass hub: title bar, game list on the left, game on the right, tab bar and footer
+local PAD, GAP = 10, 8
+local TITLE_H, TAB_H, FOOT_H = 38, 42, 28
+-- the window is built at a fixed design size and then shrunk (UIScale) to fit this screen,
+-- so every game always fits no matter how small the screen is
+local WIN_W, WIN_H = 1000, 660
+local FIT = math.clamp(math.min((vp.X - 16) / WIN_W, (vp.Y - 64) / WIN_H), 0.25, 1.35) * WINDOW_SCALE
+local BODY_H = WIN_H - TITLE_H
+local contentH = BODY_H - TAB_H - FOOT_H - GAP * 4
+local leftW = math.clamp(math.floor(WIN_W * 0.3), 170, 300)
+local rightW = WIN_W - leftW - GAP * 3
+local S = math.clamp(math.min(contentH - 154, rightW - PAD * 2), 160, 560)
+
+local function glassFill(f, a, b2, transp)
+	f.BackgroundColor3 = Color3.new(1, 1, 1)
+	f.BackgroundTransparency = transp or 0
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new(a, b2)
+	g.Rotation = 90
+	g.Parent = f
+end
+local function strokeOf(f, col, transp, th)
+	local st = Instance.new("UIStroke")
+	st.Color = col
+	st.Transparency = transp or 0.5
+	st.Thickness = th or 1.5
+	st.Parent = f
+	return st
+end
+
+-- fox head drawn from shapes (blue neon fox like the BONA-FOX logo)
+local function foxLogo(parent, size)
+	local h = Instance.new("Frame")
+	h.BackgroundTransparency = 1
+	h.Size = UDim2.fromOffset(size, size)
+	h.Parent = parent
+	local function R(x, y, w, hh, c1, c2, rot, stroke)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = Color3.new(1, 1, 1)
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, hh)
+		f.Rotation = rot or 0
+		local g = Instance.new("UIGradient")
+		g.Color = ColorSequence.new(c1, c2)
+		g.Rotation = 90
+		g.Parent = f
+		Instance.new("UICorner", f).CornerRadius = UDim.new(0.14, 0)
+		if stroke then
+			local st = Instance.new("UIStroke")
+			st.Color = stroke
+			st.Thickness = 1.5
+			st.Transparency = 0.25
+			st.Parent = f
+		end
+		f.Parent = h
+		return f
+	end
+	local b1, b2 = Color3.fromRGB(104, 190, 255), Color3.fromRGB(22, 76, 228)
+	local glow = Color3.fromRGB(170, 226, 255)
+	local white, white2 = Color3.new(1, 1, 1), Color3.fromRGB(196, 228, 255)
+	R(0.08, 0.0, 0.32, 0.32, b1, b2, 45, glow)
+	R(0.6, 0.0, 0.32, 0.32, b1, b2, 45, glow)
+	R(0.18, 0.1, 0.14, 0.14, white, white2, 45)
+	R(0.68, 0.1, 0.14, 0.14, white, white2, 45)
+	R(0.2, 0.2, 0.6, 0.6, b1, b2, 45, glow)
+	R(0.34, 0.42, 0.32, 0.32, white, white2, 45)
+	R(0.26, 0.4, 0.17, 0.06, Color3.fromRGB(120, 230, 255), Color3.fromRGB(60, 160, 255), 22)
+	R(0.57, 0.4, 0.17, 0.06, Color3.fromRGB(120, 230, 255), Color3.fromRGB(60, 160, 255), -22)
+	R(0.46, 0.68, 0.08, 0.06, Color3.fromRGB(16, 30, 80), Color3.fromRGB(16, 30, 80))
+	return h
+end
+
+local phone = Instance.new("Frame") -- the window (also used by the lose animation to shake)
+phone.Size = UDim2.fromOffset(WIN_W, WIN_H)
+phone.AnchorPoint = Vector2.new(0.5, 0.5)
+phone.Position = UDim2.new(0.5, 0, 0.5, 0)
+do
+	local us = Instance.new("UIScale")
+	us.Scale = FIT
+	us.Parent = phone
+end
+phone.BorderSizePixel = 0
+phone.Active = true
+phone.Draggable = true
+phone.ClipsDescendants = false
+phone.Parent = gui
+glassFill(phone, Color3.fromRGB(14, 38, 128), Color3.fromRGB(4, 10, 44))
+Instance.new("UICorner", phone).CornerRadius = UDim.new(0, 18)
+strokeOf(phone, Color3.fromRGB(70, 160, 255), 0.15, 3)
+local screen = phone
+
+-- BONA-FOX banner sitting on the top edge of the window
+do
+	local bw = math.min(300, math.floor(WIN_W * 0.36))
+	local ban = Instance.new("Frame")
+	ban.AnchorPoint = Vector2.new(0.5, 0.5)
+	ban.Position = UDim2.new(0.5, 0, 0, 0)
+	ban.Size = UDim2.fromOffset(bw, 46)
+	ban.BorderSizePixel = 0
+	ban.ZIndex = 30
+	glassFill(ban, Color3.fromRGB(18, 52, 160), Color3.fromRGB(4, 12, 56))
+	ban.Parent = phone
+	Instance.new("UICorner", ban).CornerRadius = UDim.new(0.5, 0)
+	strokeOf(ban, Color3.fromRGB(110, 190, 255), 0.1, 2.5)
+	local logo = foxLogo(ban, 38)
+	logo.Position = UDim2.fromOffset(14, 4)
+	local tl = Instance.new("TextLabel")
+	tl.BackgroundTransparency = 1
+	tl.Text = "BONA-FOX"
+	tl.TextColor3 = Color3.new(1, 1, 1)
+	tl.TextStrokeColor3 = Color3.fromRGB(60, 150, 255)
+	tl.TextStrokeTransparency = 0.35
+	tl.Font = Enum.Font.GothamBlack
+	tl.TextSize = 26
+	tl.TextXAlignment = Enum.TextXAlignment.Left
+	tl.Position = UDim2.fromOffset(60, 0)
+	tl.Size = UDim2.new(1, -66, 1, 0)
+	tl.Parent = ban
+end
+
+-- title bar
+local titleBar = Instance.new("Frame")
+titleBar.Position = UDim2.fromOffset(GAP, 6)
+titleBar.Size = UDim2.fromOffset(WIN_W - GAP * 2, TITLE_H - 6)
+titleBar.BorderSizePixel = 0
+glassFill(titleBar, Color3.fromRGB(26, 70, 190), Color3.fromRGB(10, 34, 120))
+titleBar.Parent = phone
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
+strokeOf(titleBar, Color3.fromRGB(110, 190, 255), 0.65)
+do
+	local tl = Instance.new("TextLabel")
+	tl.BackgroundTransparency = 1
+	tl.Text = ""
+	tl.TextColor3 = Color3.new(1, 1, 1)
+	tl.Font = Enum.Font.GothamBold
+	tl.TextSize = 15
+	tl.TextXAlignment = Enum.TextXAlignment.Left
+	tl.Position = UDim2.fromOffset(14, 0)
+	tl.Size = UDim2.new(1, -90, 1, 0)
+	tl.Parent = titleBar
+end
+
+local body = Instance.new("Frame") -- everything under the title bar (hidden when minimized)
+body.BackgroundTransparency = 1
+body.Position = UDim2.fromOffset(0, TITLE_H)
+body.Size = UDim2.fromOffset(WIN_W, BODY_H)
+body.Parent = phone
+
+do
+	local function round(text, xFromRight, fn)
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.fromOffset(22, 22)
+		b.Position = UDim2.new(1, -xFromRight, 0.5, -11)
+		b.BackgroundColor3 = Color3.fromRGB(30, 100, 230)
+		b.BorderSizePixel = 0
+		b.Text = text
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.Font = Enum.Font.GothamBold
+		b.TextSize = 14
+		b.AutoButtonColor = true
+		b.Parent = titleBar
+		Instance.new("UICorner", b).CornerRadius = UDim.new(0.5, 0)
+		strokeOf(b, Color3.fromRGB(190, 225, 255), 0.5, 1)
+		b.Activated:Connect(fn)
+	end
+	local minimized = false
+	round("x", 32, function() gui:Destroy() end)
+	round("-", 60, function()
+		minimized = not minimized
+		body.Visible = not minimized
+		phone.Size = UDim2.fromOffset(WIN_W, minimized and (TITLE_H + 6) or WIN_H)
+	end)
+end
+
+local function glassPanel(parent, x, y, w, h)
+	local f = Instance.new("Frame")
+	f.Position = UDim2.fromOffset(x, y)
+	f.Size = UDim2.fromOffset(w, h)
+	f.BorderSizePixel = 0
+	glassFill(f, Color3.fromRGB(22, 60, 170), Color3.fromRGB(8, 24, 96), 0.25)
+	f.Parent = parent
+	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 16)
+	strokeOf(f, Color3.fromRGB(90, 170, 255), 0.6)
+	return f
+end
+
+local leftPanel = glassPanel(body, GAP, GAP, leftW, contentH)
+local rightPanel = glassPanel(body, GAP * 2 + leftW, GAP, rightW, contentH)
+
+-- the game being played sits here
 local main = Instance.new("Frame")
 main.Size = UDim2.fromOffset(S + PAD * 2, S + 106)
-main.AnchorPoint = Vector2.new(0.5, 0.5)
-main.Position = UDim2.fromScale(0.5, 0.5)
-main.BackgroundColor3 = Color3.fromRGB(38, 36, 33)
+main.Position = UDim2.fromOffset(math.floor((rightW - (S + PAD * 2)) / 2), 6)
+main.BackgroundTransparency = 1
 main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-main.Parent = gui
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+main.Visible = false
+main.Parent = rightPanel
+
+-- shown when no game is open
+local hero = Instance.new("Frame")
+hero.BackgroundTransparency = 1
+hero.Size = UDim2.fromScale(1, 1)
+hero.Parent = rightPanel
+
+local tabBar = Instance.new("Frame")
+tabBar.Position = UDim2.fromOffset(GAP, GAP * 2 + contentH)
+tabBar.Size = UDim2.fromOffset(WIN_W - GAP * 2, TAB_H)
+tabBar.BorderSizePixel = 0
+glassFill(tabBar, Color3.fromRGB(24, 64, 180), Color3.fromRGB(8, 28, 100), 0.15)
+tabBar.Parent = body
+Instance.new("UICorner", tabBar).CornerRadius = UDim.new(0, TAB_H / 2)
+strokeOf(tabBar, Color3.fromRGB(90, 170, 255), 0.6)
+
+local footer = Instance.new("Frame")
+footer.Position = UDim2.fromOffset(GAP, GAP * 3 + contentH + TAB_H)
+footer.Size = UDim2.fromOffset(WIN_W - GAP * 2, FOOT_H)
+footer.BackgroundTransparency = 1
+footer.Parent = body
 
 local chessPage = Instance.new("Frame")
 chessPage.BackgroundTransparency = 1
@@ -506,8 +724,78 @@ local function label(parent, text, size, pos, ts, col, font)
 	return l
 end
 
+-- sound effects: soft clicks, pops, chimes in musical notes and a fanfare.
+-- Every sound is checked on this device first; if one is missing the next one in its list is used.
+local sfx = { on = true }
+do
+	local Debris = game:GetService("Debris")
+	local CP = game:GetService("ContentProvider")
+	local LISTS = {
+		click = { "rbxassetid://6895079853", "rbxasset://sounds/switch.mp3", "rbxasset://sounds/button.mp3",
+			"rbxasset://sounds/clickfast.wav", "rbxasset://sounds/snap.mp3" },
+		chime = { "rbxasset://sounds/electronicpingshort.wav", "rbxasset://sounds/electronicpingshort.mp3",
+			"rbxassetid://12222216", "rbxassetid://12221967" },
+		thud = { "rbxasset://sounds/action_jump_land.mp3", "rbxasset://sounds/impact_water.mp3",
+			"rbxasset://sounds/clickfast.wav" },
+		oof = { "rbxasset://sounds/uuhhh.mp3", "rbxasset://sounds/action_falling.mp3" },
+	}
+	local ids = {}
+	task.spawn(function()
+		for kind, list in pairs(LISTS) do
+			for _, id in ipairs(list) do
+				local t = Instance.new("Sound")
+				t.SoundId = id
+				t.Parent = gui
+				pcall(function() CP:PreloadAsync({ t }) end)
+				local ok = t.IsLoaded and t.TimeLength > 0
+				t:Destroy()
+				if ok then
+					ids[kind] = id
+					break
+				end
+			end
+		end
+		ids.chime = ids.chime or ids.click
+		ids.click = ids.click or ids.chime
+		ids.thud = ids.thud or ids.click
+		ids.oof = ids.oof or ids.thud
+	end)
+	local function note(kind, speed, vol, delay)
+		local function go()
+			if not sfx.on or not ids[kind] then return end
+			local snd = Instance.new("Sound")
+			snd.SoundId = ids[kind]
+			snd.PlaybackSpeed = speed
+			snd.Volume = vol or 0.4
+			snd.Parent = gui
+			snd:Play()
+			Debris:AddItem(snd, 3)
+		end
+		if delay and delay > 0 then task.delay(delay, go) else go() end
+	end
+	local function st(n) return 2 ^ (n / 12) end -- musical steps
+	function sfx.tap() note("click", 1, 0.3) end
+	function sfx.move() note("click", 0.85, 0.35) end
+	function sfx.flip() note("click", 1.4, 0.3) end
+	function sfx.drop() note("thud", 1.3, 0.35) end
+	function sfx.capture() note("thud", 0.9, 0.55); note("click", 0.7, 0.35, 0.04) end
+	function sfx.bad() note("thud", 0.7, 0.45); note("click", 0.6, 0.35, 0.05) end
+	function sfx.match() note("chime", st(4), 0.4); note("chime", st(7), 0.4, 0.1) end
+	function sfx.eat() note("chime", st(7), 0.4); note("chime", st(12), 0.35, 0.07) end
+	function sfx.win()
+		for i, n in ipairs({ 0, 4, 7, 12 }) do note("chime", st(n), 0.45, (i - 1) * 0.1) end
+		for _, n in ipairs({ 12, 16, 19 }) do note("chime", st(n), 0.4, 0.5) end
+	end
+	function sfx.lose()
+		note("oof", 1, 0.8)
+		note("thud", 0.6, 0.5, 0.35)
+		note("chime", st(-5), 0.3, 0.55)
+	end
+end
+
 -- celebration animation used by every mini game (banner + confetti)
 local function celebrate(text)
+	sfx.win()
 	local TS = game:GetService("TweenService")
 	local rnd = Random.new()
 	local ov = Instance.new("Frame")
@@ -515,7 +803,7 @@ local function celebrate(text)
 	ov.Size = UDim2.fromScale(1, 1)
 	ov.ZIndex = 100
 	ov.ClipsDescendants = true
-	ov.Parent = main
+	ov.Parent = screen
 
 	-- expanding ring
 	local ring = Instance.new("Frame")
@@ -595,6 +883,107 @@ local function celebrate(text)
 		TS:Create(bs, TweenInfo.new(0.4), { Transparency = 1 }):Play()
 	end)
 	task.delay(2.6, function() ov:Destroy() end)
+end
+
+-- "you lost" animation: red flash, phone shake, falling pieces and a banner that drops in
+local function lose(text, sub)
+	sfx.lose()
+	local TS = game:GetService("TweenService")
+	local rnd = Random.new()
+	local ov = Instance.new("Frame")
+	ov.BackgroundTransparency = 1
+	ov.Size = UDim2.fromScale(1, 1)
+	ov.ZIndex = 100
+	ov.ClipsDescendants = true
+	ov.Parent = screen
+
+	local tint = Instance.new("Frame")
+	tint.Size = UDim2.fromScale(1, 1)
+	tint.BackgroundColor3 = Color3.fromRGB(150, 0, 12)
+	tint.BackgroundTransparency = 1
+	tint.BorderSizePixel = 0
+	tint.ZIndex = 101
+	tint.Parent = ov
+	TS:Create(tint, TweenInfo.new(0.25), { BackgroundTransparency = 0.5 }):Play()
+
+	for _ = 1, 28 do
+		local p = Instance.new("Frame")
+		p.AnchorPoint = Vector2.new(0.5, 0.5)
+		p.BorderSizePixel = 0
+		local sz = rnd:NextInteger(5, 11)
+		p.Size = UDim2.fromOffset(sz, sz)
+		local g = rnd:NextInteger(30, 90)
+		p.BackgroundColor3 = Color3.fromRGB(g, g, g + 10)
+		local x = rnd:NextNumber(0.05, 0.95)
+		p.Position = UDim2.fromScale(x, -0.05)
+		p.Rotation = rnd:NextInteger(0, 360)
+		p.ZIndex = 102
+		p.Parent = ov
+		TS:Create(p, TweenInfo.new(rnd:NextNumber(1.2, 2.2), Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ Position = UDim2.fromScale(x + rnd:NextNumber(-0.08, 0.08), 1.1), Rotation = p.Rotation + rnd:NextInteger(-300, 300) }):Play()
+	end
+
+	local bw, bh = math.floor(S * 0.86), 66
+	local banner = Instance.new("TextLabel")
+	banner.AnchorPoint = Vector2.new(0.5, 0.5)
+	banner.Position = UDim2.fromScale(0.5, -0.1)
+	banner.Size = UDim2.fromOffset(bw, bh)
+	banner.BackgroundColor3 = Color3.fromRGB(36, 12, 18)
+	banner.Text = text or "You lost"
+	banner.TextColor3 = Color3.fromRGB(255, 96, 96)
+	banner.Font = Enum.Font.GothamBlack
+	banner.TextScaled = true
+	banner.ZIndex = 103
+	Instance.new("UICorner", banner).CornerRadius = UDim.new(0, 16)
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 12), UDim.new(0, 12)
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 14), UDim.new(0, 14)
+	pad.Parent = banner
+	local tc = Instance.new("UITextSizeConstraint")
+	tc.MaxTextSize = 30
+	tc.Parent = banner
+	local bs = Instance.new("UIStroke")
+	bs.Color = Color3.fromRGB(255, 96, 96)
+	bs.Thickness = 3
+	bs.Parent = banner
+	banner.Parent = ov
+	TS:Create(banner, TweenInfo.new(0.75, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out),
+		{ Position = UDim2.fromScale(0.5, 0.42) }):Play()
+
+	local subL
+	if sub then
+		subL = Instance.new("TextLabel")
+		subL.AnchorPoint = Vector2.new(0.5, 0)
+		subL.Position = UDim2.new(0.5, 0, 0.42, math.floor(bh / 2) + 10)
+		subL.Size = UDim2.fromOffset(bw, 24)
+		subL.BackgroundTransparency = 1
+		subL.Text = sub
+		subL.TextColor3 = Color3.new(1, 1, 1)
+		subL.Font = Enum.Font.GothamBold
+		subL.TextSize = 15
+		subL.TextTransparency = 1
+		subL.ZIndex = 103
+		subL.Parent = ov
+		TS:Create(subL, TweenInfo.new(0.4), { TextTransparency = 0 }):Play()
+	end
+
+	task.spawn(function()
+		local p0 = phone.Position
+		for i = 1, 8 do
+			local d = (i % 2 == 0 and 1 or -1) * math.floor(12 * (1 - i / 9))
+			phone.Position = p0 + UDim2.fromOffset(d, 0)
+			task.wait(0.04)
+		end
+		phone.Position = p0
+	end)
+
+	task.delay(2, function()
+		TS:Create(tint, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
+		TS:Create(banner, TweenInfo.new(0.4), { BackgroundTransparency = 1, TextTransparency = 1 }):Play()
+		TS:Create(bs, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+		if subL then TS:Create(subL, TweenInfo.new(0.4), { TextTransparency = 1 }):Play() end
+	end)
+	task.delay(2.7, function() ov:Destroy() end)
 end
 
 label(chessPage, "BONA CHESS  vs Bot", UDim2.fromOffset(S - 80, 22), UDim2.fromOffset(PAD, 6), 17)
@@ -757,6 +1146,7 @@ Instance.new("UICorner", promoFrame).CornerRadius = UDim.new(0, 10)
 local promoBtns = {}
 local function playMove(m)
 	selected, targets = nil, {}
+	if state.b[m.t] ~= 0 or m.flag == "ep" then sfx.capture() else sfx.move() end
 	make(state, m)
 	lastMove = m
 	afterMove()
@@ -841,6 +1231,7 @@ function afterMove()
 				celebrate("You win!")
 			else
 				setStatus("Checkmate - Bot wins")
+				lose("You lost", "Checkmate - the bot wins")
 			end
 		else
 			setStatus("Stalemate - draw")
@@ -895,7 +1286,7 @@ local function makeBtn(text, x, w, cb)
 	local b = Instance.new("TextButton")
 	b.Size = UDim2.fromOffset(w, 34)
 	b.Position = UDim2.fromOffset(x, 54 + S + 8)
-	b.BackgroundColor3 = Color3.fromRGB(118, 150, 86)
+	b.BackgroundColor3 = Color3.fromRGB(34, 98, 228)
 	b.BorderSizePixel = 0
 	b.Text = text
 	b.TextColor3 = Color3.new(1, 1, 1)
@@ -903,7 +1294,7 @@ local function makeBtn(text, x, w, cb)
 	b.Font = Enum.Font.GothamBold
 	b.Parent = chessPage
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-	b.Activated:Connect(cb)
+	b.Activated:Connect(function() sfx.tap(); cb() end)
 	return b
 end
 
@@ -1308,6 +1699,7 @@ end
 local function onTile(t)
 	if sLocked then return end
 	if tryMove(t.r, t.c, true) then
+		sfx.move()
 		moves += 1
 		updateStatus()
 		checkSolved()
@@ -1716,6 +2108,7 @@ function ssStep(p, dr, dc)
 	TweenService:Create(p.btn, TweenInfo.new(0.1, Enum.EasingStyle.Quad),
 		{ Position = UDim2.fromOffset((p.c - 1) * sCell, (p.r - 1) * sCell) }):Play()
 	ssMoves += 1
+	sfx.move()
 	ssUpdate()
 	if p.kind == "R" and p.r == 4 and p.c == 2 then
 		ssLocked = true
@@ -2045,6 +2438,7 @@ end
 
 local function fwTap(r, c)
 	if fwDone then return end
+	sfx.tap()
 	if not fwSel then
 		fwSel = { r = r, c = c }
 		fwHint = nil
@@ -2090,6 +2484,7 @@ local function fwTap(r, c)
 		b.BackgroundColor3 = Color3.fromRGB(240, 120, 110)
 		fwSel = nil
 		fwStatus.Text = ('That is not "%s" - try again'):format(fwWord)
+		sfx.bad()
 		local tk = fwToken
 		task.delay(0.4, function()
 			if tk == fwToken then paint() end
@@ -2446,6 +2841,7 @@ local function csTap(k)
 	if not csSel then
 		if #peg == 0 or csDone(peg) then return end
 		csSel = k
+		sfx.tap()
 		csRender()
 		return
 	end
@@ -2467,6 +2863,7 @@ local function csTap(k)
 		if tk ~= csToken then return end
 		table.remove(src)
 		table.insert(peg, c)
+		sfx.drop()
 		csSel = nil
 		csMoves += 1
 		csHist[#csHist + 1] = { from, k }
@@ -2482,7 +2879,7 @@ local function csTap(k)
 		csUpdate()
 		if csWon then celebrate(csLvl < #CSL and "Level complete!" or "All levels complete!") end
 	else
-		if #peg > 0 and not csDone(peg) then csSel = k else csSel = nil end
+		if #peg > 0 and not csDone(peg) then csSel = k; sfx.tap() else csSel = nil; sfx.bad() end
 		csRender()
 	end
 end
@@ -2895,6 +3292,7 @@ end
 
 local function flipCard(cd, up)
 	cd.up = up
+	sfx.flip()
 	local t1 = TweenService:Create(cd.card, TweenInfo.new(0.09, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ Size = UDim2.fromOffset(0, cd.size) })
 	t1:Play()
@@ -2919,6 +3317,7 @@ local function onCard(cd)
 		mcOpen = {}
 		if a.id == b.id then
 			a.matched, b.matched = true, true
+			sfx.match()
 			mcMatched += 1
 			for _, c in ipairs({ a, b }) do
 				local st = Instance.new("UIStroke")
@@ -2941,6 +3340,7 @@ local function onCard(cd)
 				return
 			end
 		else
+			sfx.bad()
 			task.wait(mcDelay)
 			if tk ~= mcToken then return end
 			task.spawn(function() flipCard(a, false) end)
@@ -3008,28 +3408,514 @@ return { page = mcPage, load = loadMC, lvl = function() return mcLvl end, count 
 end)()
 
 ------------------------------------------------------------------
+-- SNAKE (puzzle with gravity): eat every apple, then reach the black hole.
+-- The snake FALLS if nothing is under it (dirt, apples). Do not fall off the bottom, do not touch the saws
+-- and do not get stuck! Swipe, use the arrow buttons or the keyboard.
+------------------------------------------------------------------
+local SN = (function()
+-- # wall  A apple  X saw  E black hole (opens after all apples)  1 2 3 = snake (1 is the head)
+local SNL = {
+	{ par = 5, rows = { ".#32.", "#.#1E", ".#...", "X..A.", "#####" } },
+	{ par = 5, rows = { ".....", "..X3E", ".#12#", "#..A#", "#.##." } },
+	{ par = 5, rows = { ".....", "...3.", "..12.", "AAE#.", "#####" } },
+	{ par = 5, rows = { ".#...", "...#.", ".E12#", "AAA3.", "#####" } },
+	{ par = 6, rows = { ".....", "..#..", "...A#", "123E#", "#####" } },
+	{ par = 6, rows = { "#....", "A..E.", ".1...", "32.#.", "#####" } },
+	{ par = 6, rows = { ".....", ".#.#.", "E..3A", "#..21", "#####" } },
+	{ par = 6, rows = { ".....", "#AE.#", "...32", ".X..1", "###.#" } },
+	{ par = 6, rows = { "321..", ".A...", "..#E.", "#...#", "#####" } },
+	{ par = 6, rows = { "12E..", ".3A#.", ".A...", "..##.", "#####" } },
+	{ par = 6, rows = { "X....", "...A.", "#321.", "..A..", "###E#" } },
+	{ par = 7, rows = { ".#...", "#1.E.", "32.X.", ".#.A.", "..###" } },
+	{ par = 7, rows = { "E#.##", "..A.#", "A.3..", ".12..", "#####" } },
+	{ par = 7, rows = { "...#E", "#321A", "..A..", "....X", ".###." } },
+	{ par = 7, rows = { "#A..X", "#E..#", "21.#.", "3.A.#", "#####" } },
+	{ par = 8, rows = { "E.#..", ".....", ".#1..", ".A23.", "#####" } },
+	{ par = 8, rows = { ".....", "#.3A.", "X12..", "E.#..", "#####" } },
+	{ par = 8, rows = { "..A.E", "...23", "#..1A", "..#..", "#.###" } },
+	{ par = 8, rows = { ".....", ".A...", ".3E..", "12.A.", "#####" } },
+	{ par = 8, rows = { ".A.A.", "..3..", ".#21X", "AE##.", "#####" } },
+	{ par = 8, rows = { ".X#A.", "#E..1", "...32", "#AA##", "###.." } },
+	{ par = 8, rows = { ".A...", ".A321", "#.A##", "#.EX.", "#####" } },
+	{ par = 9, rows = { ".A...", "..X..", ".E.3#", "..12.", "#####" } },
+	{ par = 9, rows = { ".A##.", "...12", "A..#3", ".E...", "#####" } },
+	{ par = 9, rows = { "#...#", "3#A..", "21..E", ".A.A.", "#####" } },
+	{ par = 9, rows = { "...EA", "1.A..", "23...", "#..A.", "###.#" } },
+	{ par = 10, rows = { ".1.A.", "32...", "#A#E.", "#....", "#####" } },
+	{ par = 10, rows = { "#E.23", "#.#1A", "X.A.#", ".#A..", "#####" } },
+	{ par = 11, rows = { "E..#.", "#.3..", "#12.A", "..#..", "#####" } },
+	{ par = 11, rows = { ".....", "321XE", ".#...", "A..##", "#####" } },
+	{ par = 11, rows = { "#A.AX", ".....", "EA..3", ".#.12", "#####" } },
+	{ par = 11, rows = { "..32A", "#A#1.", "..A.#", ".#..E", "##.##" } },
+	{ par = 11, rows = { ".#...", ".A.23", ".X.1A", "E.A..", "#####" } },
+	{ par = 11, rows = { ".A...", "...AA", "3..E.", "21.#.", "##.##" } },
+	{ par = 12, rows = { "..E.#", ".12AA", "A#3..", ".....", "#####" } },
+	{ par = 12, rows = { ".EA..", "#..#A", "...3.", "..A21", ".####" } },
+	{ par = 13, rows = { "A321#", ".E#..", "#.A..", "##...", "##.##" } },
+	{ par = 13, rows = { "3....", "21...", "A.E.A", "..#..", "####." } },
+	{ par = 14, rows = { "#A..E", "..A.X", "...3.", ".#12A", "#####" } },
+	{ par = 16, rows = { ".AXA.", ".....", ".21EA", ".3...", "####." } },
+	{ par = 6, rows = { "#.#...", "#.#32#", ".#E#1.", "#..A..", "..X.A.", "#.####" } },
+	{ par = 6, rows = { "...#.#", "#..A.A", "#.#.3A", "....21", ".#.E#.", "###.##" } },
+	{ par = 7, rows = { ".#...#", "#.321.", "..X#..", "...EA.", ".XA...", "######" } },
+	{ par = 7, rows = { "....#.", "..E...", "12...X", "A3A.##", "AA....", "#.####" } },
+	{ par = 8, rows = { ".321A#", "#..A..", "#....#", "..A.#.", ".#..E#", "######" } },
+	{ par = 9, rows = { "..A..#", "##.1..", "#..23E", "...A..", "......", "######" } },
+	{ par = 9, rows = { "E.A.#X", "A.A...", "...#..", "....12", ".#...3", "######" } },
+	{ par = 9, rows = { "X..##.", "X.A.AA", "##...1", "##..32", ".#.EA#", "######" } },
+	{ par = 10, rows = { ".E..12", "....#3", "...A..", "..A...", "#.....", "#.####" } },
+	{ par = 10, rows = { "......", "#.....", "...#..", "..1...", "AE23A.", ".#####" } },
+	{ par = 10, rows = { "##..E.", "....#.", "#.32.#", ".AA1..", "....#.", "######" } },
+	{ par = 10, rows = { "##.##.", "...EA.", ".....#", "A3X...", "12..A.", "######" } },
+	{ par = 10, rows = { ".#.32.", "..#A1.", "#.A...", "#AA...", ".#.#.E", "######" } },
+	{ par = 11, rows = { "#.....", ".#.#.X", ".A3...", "..2..A", ".E1...", "######" } },
+	{ par = 11, rows = { ".##A.E", "##....", "......", "..1A..", ".32...", "######" } },
+	{ par = 11, rows = { ".E.#..", ".#A..A", "..#23.", "...1.#", "...A.#", "..##.." } },
+	{ par = 11, rows = { "..A...", "#X....", "...A..", ".E..1#", "..AA23", "#####." } },
+	{ par = 12, rows = { "..A..E", "......", "..3...", "..21..", "..A.#.", "######" } },
+	{ par = 12, rows = { "....E.", "..#A..", "X#...A", ".#A23.", "..#1..", "######" } },
+	{ par = 12, rows = { "#...A#", ".1...#", ".23..E", "A.#..#", "...A..", "#####." } },
+	{ par = 12, rows = { ".#AA..", "....AE", "21#...", "3##...", "....A.", "######" } },
+	{ par = 12, rows = { "..#AA#", "1.A...", "2....E", "3#A...", "#.#...", "#####." } },
+	{ par = 13, rows = { "......", ".....#", ".#X...", "AX3A.E", ".12...", "######" } },
+	{ par = 13, rows = { "...E..", "......", "....12", "A...#3", "#.AA..", "######" } },
+	{ par = 13, rows = { ".#A...", ".#...#", "..A#..", "....1E", ".A.32.", "######" } },
+	{ par = 13, rows = { "#..AX.", ".A....", "..32E.", "###1A.", "......", ".##.##" } },
+	{ par = 14, rows = { "......", ".A321.", ".#.AEA", "X..#..", ".X.#..", ".#####" } },
+	{ par = 14, rows = { "#..A#X", ".A....", "12AE..", "#3..#.", ".A....", "#X####" } },
+	{ par = 14, rows = { "A.##..", ".23..E", "A1..A.", "##...#", "....A.", "######" } },
+	{ par = 14, rows = { ".AE...", "A.A3A.", ".#12.#", ".##.X.", "......", "######" } },
+	{ par = 15, rows = { ".A..#X", ".....#", "1..#.A", "2E.##.", "3X....", "######" } },
+	{ par = 15, rows = { "#AE.A.", "A.....", "......", ".12#..", ".#3X..", "######" } },
+	{ par = 16, rows = { "...E..", "..AX.A", ".3....", ".2....", "X1...A", "######" } },
+	{ par = 16, rows = { "XA..#.", "#1....", "32.E#.", "#A.#..", ".#A.A.", "####X#" } },
+	{ par = 17, rows = { "A.....", "..A.EA", ".....A", "....3.", "....21", "######" } },
+	{ par = 17, rows = { "..A...", "A.#...", "......", ".#A321", "...EA.", "######" } },
+	{ par = 18, rows = { "12...A", ".3....", ".A###A", "...A..", "#...#E", "X#####" } },
+	{ par = 18, rows = { "...A.A", ".#A...", "X.....", "..3.#E", ".12.A.", "######" } },
+	{ par = 22, rows = { "..#A..", ".E..A#", "...#..", ".A..21", "A.#.3#", "####.#" } },
+	{ par = 25, rows = { "#.A...", "..E32.", "A...1.", "A...#.", "......", "####A." } },
+	{ par = 8, rows = { "...#...", ".XEA...", "..A..X.", "..A.1..", "....2..", "....3.#", "###.###" } },
+	{ par = 8, rows = { ".X.....", "A....X.", "...A.A1", "E...#.2", "....X.3", "......#", "#######" } },
+	{ par = 9, rows = { "..##.X.", ".#123..", "....#..", "..A.EA.", ".XA....", ".......", "#####.X" } },
+	{ par = 12, rows = { "..#E...", "..#X...", "....#.#", "...AA..", ".21....", ".3A..##", ".######" } },
+	{ par = 13, rows = { ".......", "....1.A", "E...23#", "#.AX#..", ".A.....", "..##...", "#######" } },
+	{ par = 13, rows = { ".E..X#.", ".A...#.", "A##...#", ".#21...", "..3#A..", "#......", "#######" } },
+	{ par = 14, rows = { "321#...", "#...AA.", ".......", "......X", ".A.....", ".......", "#####E#" } },
+	{ par = 14, rows = { "..#....", "#.....A", "#......", "X....AE", "...1.#.", ".A32.#.", "#######" } },
+	{ par = 14, rows = { "#......", ".X.AE.#", "..A.###", "#..#.##", ".3#.AXX", "#21....", "#######" } },
+	{ par = 14, rows = { ".....X.", ".AA....", "......A", "...#.E.", "A.#....", "123...#", "#.#####" } },
+	{ par = 15, rows = { "...#A.E", "21.A...", "3...A..", "#..#...", "#....A.", "X......", "#######" } },
+	{ par = 16, rows = { ".#.#...", ".....XE", "#......", "AA.....", ".3..X..", "A21....", "#######" } },
+	{ par = 16, rows = { "AA.....", "....#1X", ".....23", ".#...A.", "..X.#E.", ".....#.", "#######" } },
+	{ par = 16, rows = { "#......", "..##.#.", "X.....A", "E#..XA.", "321....", "..A.#..", "..#.###" } },
+	{ par = 16, rows = { "..A##..", "...32#.", "AE.#1X.", ".#.....", "A..A...", "..A...#", "##.####" } },
+	{ par = 17, rows = { ".......", "#..X...", "......X", ".A.....", "#..1...", "A..23.A", "E.#.###" } },
+	{ par = 17, rows = { ".A..XXX", "..#..A.", ".......", "....A.#", ".321...", "..AA.E.", "#######" } },
+	{ par = 17, rows = { "....#12", ".E..#.3", "...A..#", "A.A....", "...X#..", ".#AA...", "##..###" } },
+	{ par = 18, rows = { "....123", ".....#.", ".EA..#A", "#..XA..", "#......", "....A.#", "#####X#" } },
+	{ par = 18, rows = { "...A.#.", "A......", ".....#.", "#XA##.E", ".23#...", ".1A..X#", "#######" } },
+	{ par = 18, rows = { "...##..", ".E#.AX.", "A#.....", ".X.....", "...A321", "A....A.", "######." } },
+	{ par = 19, rows = { "......A", ".......", ".E..#..", "....XA.", "..#A...", ".321.X#", "#####.#" } },
+	{ par = 19, rows = { ".#..A..", "..A#...", "#E#....", "#.A.X##", "....#X.", "A12...#", "##3###." } },
+	{ par = 20, rows = { ".......", "....A#.", "..#..#A", "...A...", "..32.X#", "#E.1...", "##.####" } },
+	{ par = 20, rows = { ".#X..3.", "..X.12A", ".#..#..", "...A...", "#.....X", ".#.AE..", "##.####" } },
+	{ par = 20, rows = { "....X.E", "A......", ".A..#12", "......3", ".#..A.A", ".##...A", "#######" } },
+	{ par = 21, rows = { ".A.....", ".......", "...E..A", "...X.#.", "..1A..#", "#32#...", "#.#####" } },
+	{ par = 22, rows = { "...A#.A", "..E....", "..X#.#.", ".X..A..", "..#A...", ".123##X", "#######" } },
+	{ par = 23, rows = { ".#.....", "..#.AA.", "A....#E", "..#..A.", ".##..#.", "...X321", "##.####" } },
+	{ par = 23, rows = { ".A..X..", "#...321", "..##E##", "A..#...", "..A.#..", "#.A####", "#######" } },
+	{ par = 23, rows = { ".......", "..E..A.", "A...A..", ".A..X..", "A23.#.#", ".1..##.", ".######" } },
+	{ par = 23, rows = { "A..A#..", "....#X#", "#.....E", ".#A....", "...#.3.", "A..A12.", ".######" } },
+	{ par = 23, rows = { "......A", "..A.X.1", "A..X.32", "...#.#.", ".#..#..", "....AA#", "###E###" } },
+	{ par = 24, rows = { "....E..", "..AA...", "..AX.#.", "3..#...", "2......", "1......", "#.#####" } },
+	{ par = 25, rows = { ".....AE", "..A#..X", "...#..A", "....23.", "....1..", ".A..A..", "#.X##.#" } },
+	{ par = 26, rows = { "#A.....", ".AAXA..", "..#.12X", ".A...3X", "...#.E.", "..#.###", "####..#" } },
+	{ par = 27, rows = { ".#E...A", ".A.....", "A...A23", ".#.#.1.", "##..X#.", ".#..A..", "######." } },
+	{ par = 27, rows = { "......X", ".32....", "AA1.A..", "...AXE.", ".......", ".X..#.A", "#.#####" } },
+	{ par = 31, rows = { "....#.X", ".A.....", "#.X..AA", "A..1.E.", "...2.X#", "...3..#", ".####.#" } },
+	{ par = 34, rows = { ".....#.", "AA..X.A", "A..1#..", "##32...", "A.#.E..", ".....#.", "######X" } },
+}
+local SN_COUNT = #SNL
+local D4 = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } }
+
+local snPage = Instance.new("Frame")
+snPage.BackgroundTransparency = 1
+snPage.Size = UDim2.fromScale(1, 1)
+snPage.Visible = false
+snPage.Parent = main
+
+label(snPage, "SNAKE", UDim2.fromOffset(S - 150, 22), UDim2.fromOffset(PAD, 6), 17)
+local snStatus = label(snPage, "", UDim2.fromOffset(S, 20), UDim2.fromOffset(PAD, 28), 13,
+	Color3.fromRGB(190, 190, 185), Enum.Font.Gotham)
+
+local snBoard = Instance.new("Frame")
+snBoard.BackgroundColor3 = Color3.fromRGB(134, 205, 242)
+snBoard.BorderSizePixel = 0
+snBoard.ClipsDescendants = true
+snBoard.Parent = snPage
+Instance.new("UICorner", snBoard).CornerRadius = UDim.new(0, 10)
+
+local snCatch = Instance.new("TextButton")
+snCatch.BackgroundTransparency = 1
+snCatch.Text = ""
+snCatch.Size = UDim2.fromScale(1, 1)
+snCatch.ZIndex = 30
+snCatch.Parent = snBoard
+
+local snN, snCell, snLvl = 5, 40, 1
+local snWall, snSpike, snApples, snApplesLeft, snExit, snExitObj = {}, {}, {}, 0, nil, nil
+local snBody, snHist, snMoves = {}, {}, 0
+local snDead, snWon, snMsg = false, false, ""
+local snStatic, snDyn, snAppleObj = {}, {}, {}
+
+local function key(r, c) return r * 100 + c end
+
+local function px(parent, x, y, w, h, col, round, rot, stroke)
+	local f = Instance.new("Frame")
+	f.BorderSizePixel = 0
+	f.BackgroundColor3 = col
+	f.Position = UDim2.fromOffset(x, y)
+	f.Size = UDim2.fromOffset(w, h)
+	if rot then f.Rotation = rot end
+	if round then Instance.new("UICorner", f).CornerRadius = UDim.new(round, 0) end
+	if stroke then
+		local st = Instance.new("UIStroke")
+		st.Color = stroke
+		st.Thickness = 2
+		st.Parent = f
+	end
+	f.Parent = parent
+	return f
+end
+
+local function snUpdate()
+	if snWon then
+		snStatus.Text = ("Level %d complete in %d moves!%s"):format(snLvl, snMoves, snLvl < SN_COUNT and " Tap Next" or "")
+	elseif snDead then
+		snStatus.Text = snMsg
+	else
+		snStatus.Text = ("Level %d/%d - Apples left %d - Moves %d"):format(snLvl, SN_COUNT, snApplesLeft, snMoves)
+	end
+end
+
+local function snBuild(rows)
+	for _, o in ipairs(snStatic) do o:Destroy() end
+	for _, o in ipairs(snDyn) do o:Destroy() end
+	snStatic, snDyn, snAppleObj = {}, {}, {}
+	snN = #rows
+	snCell = math.floor(S / snN)
+	snBoard.Size = UDim2.fromOffset(snCell * snN, snCell * snN)
+	snBoard.Position = UDim2.fromOffset(PAD + math.floor((S - snCell * snN) / 2), 54)
+	snWall, snSpike, snApples, snApplesLeft, snExit, snExitObj = {}, {}, {}, 0, nil, nil
+	local segs = {}
+	local cell = snCell
+	local function add(o) snStatic[#snStatic + 1] = o return o end
+	for r = 1, snN do
+		for c = 1, snN do
+			local ch = rows[r]:sub(c, c)
+			local x, y = (c - 1) * cell, (r - 1) * cell
+			local bg = add(px(snBoard, x, y, cell, cell,
+				((r + c) % 2 == 0) and Color3.fromRGB(142, 209, 245) or Color3.fromRGB(128, 200, 240)))
+			if ch == "#" then
+				snWall[key(r, c)] = true
+				add(px(snBoard, x + 1, y + 1, cell - 2, cell - 2, Color3.fromRGB(150, 94, 52), 0.12, nil, Color3.fromRGB(92, 56, 30)))
+				add(px(snBoard, x + 2, y + 2, cell - 4, math.floor(cell * 0.26), Color3.fromRGB(108, 184, 64), 0.3))
+			elseif ch == "X" then
+				snSpike[key(r, c)] = true
+				local d = math.floor(cell * 0.8)
+				local cx, cy = x + cell / 2, y + cell / 2
+				for _, ang in ipairs({ 0, 45, 90, 135 }) do
+					add(px(snBoard, cx - d / 2, cy - d * 0.08, d, math.floor(d * 0.16), Color3.fromRGB(150, 154, 166), 0.5, ang))
+				end
+				add(px(snBoard, cx - d * 0.34, cy - d * 0.34, d * 0.68, d * 0.68, Color3.fromRGB(184, 188, 200), 0.5, nil, Color3.fromRGB(80, 84, 96)))
+				add(px(snBoard, cx - d * 0.12, cy - d * 0.12, d * 0.24, d * 0.24, Color3.fromRGB(96, 100, 112), 0.5))
+			elseif ch == "A" then
+				snApples[key(r, c)] = true
+				snApplesLeft += 1
+				local g = add(px(snBoard, x, y, cell, cell, Color3.new(1, 1, 1)))
+				g.BackgroundTransparency = 1
+				local d = math.floor(cell * 0.62)
+				px(g, (cell - d) / 2, (cell - d) / 2 + cell * 0.04, d, d, Color3.fromRGB(226, 50, 50), 0.5, nil, Color3.fromRGB(140, 20, 20))
+				px(g, cell * 0.5 - 1, cell * 0.12, 3, cell * 0.16, Color3.fromRGB(96, 60, 30), 0.5)
+				px(g, cell * 0.52, cell * 0.14, cell * 0.2, cell * 0.1, Color3.fromRGB(80, 190, 60), 0.5, -25)
+				px(g, cell * 0.3, cell * 0.36, cell * 0.12, cell * 0.12, Color3.new(1, 1, 1), 0.5).BackgroundTransparency = 0.35
+				snAppleObj[key(r, c)] = g
+			elseif ch == "E" then
+				snExit = { r = r, c = c }
+				local d = math.floor(cell * 0.84)
+				local outer = add(px(snBoard, (c - 1) * cell + (cell - d) / 2, (r - 1) * cell + (cell - d) / 2, d, d,
+					Color3.fromRGB(50, 50, 58), 0.5, nil, Color3.fromRGB(90, 90, 100)))
+				add(px(snBoard, (c - 1) * cell + cell * 0.3, (r - 1) * cell + cell * 0.3, cell * 0.4, cell * 0.4, Color3.fromRGB(8, 4, 14), 0.5))
+				snExitObj = { outer = outer, stroke = outer:FindFirstChildOfClass("UIStroke") }
+			elseif ch:match("%d") then
+				segs[tonumber(ch)] = { r = r, c = c }
+			end
+		end
+	end
+	snBody = {}
+	for i = 1, #segs do snBody[i] = segs[i] end
+end
+
+local function snRender()
+	for _, o in ipairs(snDyn) do o:Destroy() end
+	snDyn = {}
+	for k, g in pairs(snAppleObj) do g.Visible = snApples[k] ~= nil end
+	if snExitObj then
+		local open = snApplesLeft == 0
+		snExitObj.stroke.Color = open and Color3.fromRGB(206, 150, 255) or Color3.fromRGB(90, 90, 100)
+		snExitObj.outer.BackgroundColor3 = open and Color3.fromRGB(60, 24, 110) or Color3.fromRGB(50, 50, 58)
+	end
+	local t = math.floor(snCell * 0.74)
+	local function ctr(s) return (s.c - 0.5) * snCell, (s.r - 0.5) * snCell end
+	for i = #snBody, 1, -1 do
+		local a = snBody[i]
+		local nxt = snBody[i + 1]
+		local x1, y1 = ctr(a)
+		local x2, y2 = x1, y1
+		if nxt then x2, y2 = ctr(nxt) end
+		local col = (i == 1) and Color3.fromRGB(124, 220, 80) or Color3.fromRGB(88, 192, 62)
+		local f = px(snBoard, math.min(x1, x2) - t / 2, math.min(y1, y2) - t / 2,
+			math.abs(x1 - x2) + t, math.abs(y1 - y2) + t, col, 0.4, nil, Color3.fromRGB(36, 112, 28))
+		f.ZIndex = 5
+		snDyn[#snDyn + 1] = f
+	end
+	-- eyes on the head
+	local h = snBody[1]
+	local fr, fc = 0, 1
+	if snBody[2] then fr, fc = h.r - snBody[2].r, h.c - snBody[2].c end
+	local hx, hy = ctr(h)
+	for _, side in ipairs({ -1, 1 }) do
+		local ex = hx + fc * t * 0.14 + (-fr) * side * t * 0.22
+		local ey = hy + fr * t * 0.14 + fc * side * t * 0.22
+		local ed = t * 0.3
+		local e = px(snBoard, ex - ed / 2, ey - ed / 2, ed, ed, Color3.new(1, 1, 1), 0.5, nil, Color3.fromRGB(36, 112, 28))
+		e.ZIndex = 6
+		local pd = ed * 0.5
+		local p = px(snBoard, ex + fc * ed * 0.12 - pd / 2, ey + fr * ed * 0.12 - pd / 2, pd, pd, Color3.fromRGB(20, 20, 24), 0.5)
+		p.ZIndex = 7
+		snDyn[#snDyn + 1] = e
+		snDyn[#snDyn + 1] = p
+	end
+end
+
+local snBusy, snToken = false, 0
+
+local function solidAt(r, c)
+	local k = key(r, c)
+	if snWall[k] or snApples[k] then return true end
+	if snExit and r == snExit.r and c == snExit.c and snApplesLeft > 0 then return true end
+	return false
+end
+
+local function supported()
+	for _, s in ipairs(snBody) do
+		if solidAt(s.r + 1, s.c) then return true end
+	end
+	return false
+end
+
+local function canStep(dr, dc)
+	local h = snBody[1]
+	local nr, nc = h.r + dr, h.c + dc
+	if nr < 1 or nr > snN or nc < 1 or nc > snN then return false, "wall" end
+	local k = key(nr, nc)
+	if snWall[k] then return false, "wall" end
+	if snSpike[k] then return false, "saw" end
+	if snExit and nr == snExit.r and nc == snExit.c and snApplesLeft > 0 then return false, "wall" end
+	local eat = snApples[k] ~= nil
+	local limit = eat and #snBody or (#snBody - 1)
+	for i = 1, limit do
+		if snBody[i].r == nr and snBody[i].c == nc then return false, "wall" end
+	end
+	return true, eat and "eat" or "move"
+end
+
+local function hasMove()
+	for _, d in ipairs(D4) do
+		if canStep(d[1], d[2]) then return true end
+	end
+	return false
+end
+
+local function die(msg, title, sub)
+	snDead = true
+	snMsg = msg
+	snUpdate()
+	lose(title, sub)
+end
+
+local function win()
+	snWon = true
+	snUpdate()
+	celebrate(snLvl < SN_COUNT and "Level complete!" or "All levels complete!")
+end
+
+local function atExit()
+	local h = snBody[1]
+	return snExit and h.r == snExit.r and h.c == snExit.c and snApplesLeft == 0
+end
+
+-- gravity: fall one row at a time until something holds the snake up
+local function settle(tk)
+	while true do
+		if tk ~= snToken then return "cancel" end
+		if supported() then return "ok" end
+		local out, hitSaw = false, false
+		for _, s in ipairs(snBody) do
+			s.r += 1
+			if s.r > snN then out = true end
+			if snSpike[key(s.r, s.c)] then hitSaw = true end
+		end
+		snRender()
+		task.wait(0.09)
+		if tk ~= snToken then return "cancel" end
+		if out then return "fell" end
+		if hitSaw then return "saw" end
+		if atExit() then return "win" end
+	end
+end
+
+local function afterMove()
+	if not hasMove() then
+		die("Stuck! Tap Undo or Restart", "Stuck!", "Don't get stuck - tap Undo")
+	else
+		snUpdate()
+	end
+end
+
+local function move(dr, dc)
+	if snBusy or snWon or snDead then return end
+	local ok, kind = canStep(dr, dc)
+	if not ok then
+		if kind == "saw" then
+			die("Ouch! A saw got you - Undo or Restart", "You lost", "The saw got you!")
+		else
+			sfx.bad()
+		end
+		return
+	end
+	local snap = { body = {}, apples = {}, left = snApplesLeft }
+	for i, s in ipairs(snBody) do snap.body[i] = { r = s.r, c = s.c } end
+	for k in pairs(snApples) do snap.apples[k] = true end
+	snHist[#snHist + 1] = snap
+	local h = snBody[1]
+	local nr, nc = h.r + dr, h.c + dc
+	table.insert(snBody, 1, { r = nr, c = nc })
+	if kind == "eat" then
+		snApples[key(nr, nc)] = nil
+		snApplesLeft -= 1
+		sfx.eat()
+	else
+		table.remove(snBody)
+		sfx.move()
+	end
+	snMoves += 1
+	snRender()
+	if atExit() then
+		win()
+	elseif supported() then
+		afterMove()
+	else
+		snBusy = true
+		local tk = snToken
+		task.spawn(function()
+			local res = settle(tk)
+			if res == "cancel" or tk ~= snToken then return end
+			snBusy = false
+			if res == "win" then
+				win()
+			elseif res == "fell" then
+				die("You fell! Tap Undo or Restart", "You fell!", "Mind the edge")
+			elseif res == "saw" then
+				die("Ouch! A saw got you - Undo or Restart", "You lost", "The saw got you!")
+			else
+				sfx.drop()
+				afterMove()
+			end
+		end)
+	end
+end
+
+local function undo()
+	if snBusy or #snHist == 0 then return end
+	local snap = table.remove(snHist)
+	snBody = snap.body
+	snApples = snap.apples
+	snApplesLeft = snap.left
+	snMoves = math.max(0, snMoves - 1)
+	snDead, snWon = false, false
+	sfx.tap()
+	snRender()
+	snUpdate()
+end
+
+local function load(idx)
+	snToken += 1
+	snBusy = false
+	snLvl = idx
+	snMoves, snHist, snDead, snWon = 0, {}, false, false
+	snBuild(SNL[idx].rows)
+	snRender()
+	snUpdate()
+end
+
+-- keyboard (arrows / WASD)
+UIS.InputBegan:Connect(function(input, processed)
+	if processed or not snPage.Visible then return end
+	local k = input.KeyCode
+	if k == Enum.KeyCode.Up or k == Enum.KeyCode.W then move(-1, 0)
+	elseif k == Enum.KeyCode.Down or k == Enum.KeyCode.S then move(1, 0)
+	elseif k == Enum.KeyCode.Left or k == Enum.KeyCode.A then move(0, -1)
+	elseif k == Enum.KeyCode.Right or k == Enum.KeyCode.D then move(0, 1) end
+end)
+
+-- swipe on the board
+local snDrag
+snCatch.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		snDrag = Vector2.new(input.Position.X, input.Position.Y)
+	end
+end)
+UIS.InputEnded:Connect(function(input)
+	if not snDrag then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		local d = Vector2.new(input.Position.X, input.Position.Y) - snDrag
+		snDrag = nil
+		if d.Magnitude >= 16 then
+			if math.abs(d.X) > math.abs(d.Y) then move(0, d.X > 0 and 1 or -1) else move(d.Y > 0 and 1 or -1, 0) end
+		end
+	end
+end)
+
+return { page = snPage, load = load, lvl = function() return snLvl end, count = SN_COUNT, move = move, undo = undo }
+end)()
+
+------------------------------------------------------------------
 -- MENU + page switching
 ------------------------------------------------------------------
-local menuPage = Instance.new("Frame")
-menuPage.BackgroundTransparency = 1
-menuPage.Size = UDim2.fromScale(1, 1)
-menuPage.Parent = main
-
+-- open / close a game in the right panel
+local showToken = 0
+local selectCard -- filled in once the game list exists
 local function showPage(p)
-	menuPage.Visible = p == "menu"
+	showToken += 1
 	chessPage.Visible = p == "chess"
 	slidePage.Visible = p == "slide"
 	ssPage.Visible = p == "super"
 	FW.page.Visible = p == "word"
 	MC.page.Visible = p == "match"
 	CS.page.Visible = p == "color"
+	SN.page.Visible = p == "snake"
+	main.Visible = p ~= "menu"
+	hero.Visible = p == "menu"
+	if selectCard then selectCard(p) end
 end
 
 local function mkBtn(parent, text, x, y, w, h, cb)
 	local b = Instance.new("TextButton")
 	b.Size = UDim2.fromOffset(w, h)
 	b.Position = UDim2.fromOffset(x, y)
-	b.BackgroundColor3 = Color3.fromRGB(118, 150, 86)
+	b.BackgroundColor3 = Color3.fromRGB(34, 98, 228)
 	b.BorderSizePixel = 0
 	b.Text = text
 	b.TextColor3 = Color3.new(1, 1, 1)
@@ -3037,17 +3923,18 @@ local function mkBtn(parent, text, x, y, w, h, cb)
 	b.Font = Enum.Font.GothamBold
 	b.Parent = parent
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-	b.Activated:Connect(cb)
+	b.Activated:Connect(function() sfx.tap(); cb() end)
 	return b
 end
 
 -- header "Menu" buttons
-mkBtn(chessPage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
-mkBtn(slidePage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
-mkBtn(ssPage, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
-mkBtn(FW.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
-mkBtn(MC.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
-mkBtn(CS.page, "Menu", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(chessPage, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(slidePage, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(ssPage, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(FW.page, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(MC.page, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(CS.page, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
+mkBtn(SN.page, "Back", PAD + S - 72, 6, 72, 26, function() showPage("menu") end)
 
 -- slide bottom buttons
 do
@@ -3104,7 +3991,7 @@ local function addJump(page, getLvl, count, loadFn)
 	local tb = Instance.new("TextBox")
 	tb.Size = UDim2.fromOffset(58, 26)
 	tb.Position = UDim2.fromOffset(PAD + S - 72 - 64, 6)
-	tb.BackgroundColor3 = Color3.fromRGB(62, 60, 56)
+	tb.BackgroundColor3 = Color3.fromRGB(14, 42, 130)
 	tb.BorderSizePixel = 0
 	tb.TextColor3 = Color3.new(1, 1, 1)
 	tb.PlaceholderText = "Go to"
@@ -3130,52 +4017,32 @@ addJump(CS.page, CS.lvl, CS.count, CS.load)
 addJump(FW.page, FW.lvl, FW.count, FW.load)
 addJump(MC.page, MC.lvl, MC.count, MC.load)
 
-label(menuPage, "BONA GAMES", UDim2.fromOffset(S, 30), UDim2.fromOffset(PAD, 10), 24)
-label(menuPage, "Pick a mini game", UDim2.fromOffset(S, 20), UDim2.fromOffset(PAD, 44), 14,
-	Color3.fromRGB(190, 190, 185), Enum.Font.Gotham)
-
-local H = S + 106
-local ch = 104
-local menuScroll = Instance.new("ScrollingFrame")
-menuScroll.BackgroundTransparency = 1
-menuScroll.BorderSizePixel = 0
-menuScroll.Position = UDim2.fromOffset(PAD, 76)
-menuScroll.Size = UDim2.fromOffset(S, H - 76 - PAD)
-menuScroll.ScrollBarThickness = 4
-menuScroll.CanvasSize = UDim2.new()
-menuScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-menuScroll.ScrollingDirection = Enum.ScrollingDirection.Y
-menuScroll.Parent = menuPage
+-- snake buttons: undo / restart / prev / next, and arrow buttons
 do
-	local ll = Instance.new("UIListLayout")
-	ll.Padding = UDim.new(0, 8)
-	ll.SortOrder = Enum.SortOrder.LayoutOrder
-	ll.Parent = menuScroll
+	local w4 = math.floor((S - 24) / 4)
+	local y = 54 + S + 8
+	local function b4(text, i, cb, row2)
+		local b = mkBtn(SN.page, text, PAD + (w4 + 8) * i, row2 and (y + 42) or y, w4, row2 and 44 or 34, cb)
+		b.TextSize = row2 and 20 or 13
+	end
+	b4("Undo", 0, function() SN.undo() end)
+	b4("Restart", 1, function() SN.load(SN.lvl()) end)
+	b4("< Prev", 2, function() SN.load((SN.lvl() - 2) % SN.count + 1) end)
+	b4("Next >", 3, function() SN.load(SN.lvl() % SN.count + 1) end)
+	b4("<", 0, function() SN.move(0, -1) end, true)
+	b4("^", 1, function() SN.move(-1, 0) end, true)
+	b4("v", 2, function() SN.move(1, 0) end, true)
+	b4(">", 3, function() SN.move(0, 1) end, true)
 end
-local cardCount = 0
-local function card(y, color, title, desc, cb, iconFn)
-	cardCount += 1
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(1, -8, 0, ch)
-	b.LayoutOrder = cardCount
-	b.BackgroundColor3 = color
-	b.BorderSizePixel = 0
-	b.Text = ""
-	b.AutoButtonColor = true
-	b.Parent = menuScroll
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 14)
-	local icon = Instance.new("Frame")
-	icon.BackgroundTransparency = 1
-	icon.Size = UDim2.fromOffset(ch - 16, ch - 16)
-	icon.Position = UDim2.fromOffset(8, 8)
-	icon.Parent = b
-	iconFn(icon, ch - 16)
-	label(b, title, UDim2.fromOffset(S - ch - 8, 28), UDim2.fromOffset(ch + 2, math.floor(ch / 2) - 30), 22)
-	local d = label(b, desc, UDim2.fromOffset(S - ch - 12, 44), UDim2.fromOffset(ch + 2, math.floor(ch / 2) + 2), 13,
-		Color3.fromRGB(240, 240, 235), Enum.Font.Gotham)
-	d.TextWrapped = true
-	d.TextYAlignment = Enum.TextYAlignment.Top
-	b.Activated:Connect(cb)
+addJump(SN.page, SN.lvl, SN.count, SN.load)
+
+-- apps on the home screen
+local ch = 0 -- (old menu card spacing, kept so the card() calls below stay valid)
+local apps = {}
+local function card(_, color, title, desc, cb, iconFn)
+	local e = { color = color, title = title, desc = desc, cb = cb, iconFn = iconFn }
+	apps[#apps + 1] = e
+	return e
 end
 
 card(82, Color3.fromRGB(118, 150, 86), "Chess", "Play against a bot. 3 levels, full rules.",
@@ -3277,9 +4144,367 @@ card(0, Color3.fromRGB(226, 112, 36), "Matching Cards", "Flip the Halloween card
 		c2.Rotation = 8
 	end)
 
+local soundEntry
+soundEntry = card(0, Color3.fromRGB(84, 88, 104), "Sound", "",
+	function()
+		sfx.on = not sfx.on
+		if sfx.on then sfx.tap() end
+		if soundEntry.bars then
+			for _, b in ipairs(soundEntry.bars) do b.Visible = sfx.on end
+			soundEntry.slash.Visible = not sfx.on
+		end
+	end,
+	function(icon, size)
+		local function r(x, y, w, h, col, round, rot)
+			local f = Instance.new("Frame")
+			f.BorderSizePixel = 0
+			f.BackgroundColor3 = col
+			f.Position = UDim2.fromScale(x, y)
+			f.Size = UDim2.fromScale(w, h)
+			if rot then f.Rotation = rot end
+			if round then Instance.new("UICorner", f).CornerRadius = UDim.new(round, 0) end
+			f.Parent = icon
+			return f
+		end
+		local wh = Color3.new(1, 1, 1)
+		r(0.1, 0.38, 0.18, 0.24, wh, 0.2)
+		r(0.2, 0.28, 0.3, 0.44, wh, 0.15, nil)
+		r(0.26, 0.26, 0.3, 0.48, wh, 0.1, 0)
+		soundEntry.bars = {
+			r(0.6, 0.4, 0.07, 0.2, wh, 0.5),
+			r(0.72, 0.3, 0.07, 0.4, wh, 0.5),
+			r(0.84, 0.2, 0.07, 0.6, wh, 0.5),
+		}
+		soundEntry.slash = r(0.12, 0.47, 0.8, 0.07, Color3.fromRGB(255, 90, 90), 0.5, 40)
+		soundEntry.slash.Visible = not sfx.on
+		for _, b in ipairs(soundEntry.bars) do b.Visible = sfx.on end
+	end)
+
+card(0, Color3.fromRGB(70, 150, 70), "Snake", "",
+	function() showPage("snake") end,
+	function(icon, size)
+		local function r(x, y, w, h, col, round, stroke)
+			local f = Instance.new("Frame")
+			f.BorderSizePixel = 0
+			f.BackgroundColor3 = col
+			f.Position = UDim2.fromScale(x, y)
+			f.Size = UDim2.fromScale(w, h)
+			if round then Instance.new("UICorner", f).CornerRadius = UDim.new(round, 0) end
+			if stroke then
+				local st = Instance.new("UIStroke")
+				st.Color = stroke
+				st.Thickness = 1.5
+				st.Parent = f
+			end
+			f.Parent = icon
+			return f
+		end
+		local g, gd = Color3.fromRGB(120, 222, 84), Color3.fromRGB(36, 112, 28)
+		r(0.08, 0.62, 0.62, 0.2, g, 0.5, gd)
+		r(0.52, 0.34, 0.2, 0.48, g, 0.5, gd)
+		r(0.3, 0.2, 0.5, 0.2, g, 0.5, gd)
+		r(0.62, 0.1, 0.3, 0.26, g, 0.45, gd)
+		r(0.7, 0.16, 0.08, 0.08, Color3.new(1, 1, 1), 0.5)
+		r(0.82, 0.16, 0.08, 0.08, Color3.new(1, 1, 1), 0.5)
+		r(0.1, 0.18, 0.2, 0.2, Color3.fromRGB(226, 50, 50), 0.5, Color3.fromRGB(140, 20, 20))
+	end)
+
+local function tint(c, f)
+	return Color3.new(math.clamp(c.R * f, 0, 1), math.clamp(c.G * f, 0, 1), math.clamp(c.B * f, 0, 1))
+end
+
+local function makeIcon(parent, app, size)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.fromOffset(size, size)
+	b.BackgroundColor3 = Color3.new(1, 1, 1)
+	b.BorderSizePixel = 0
+	b.Text = ""
+	b.AutoButtonColor = false
+	b.Parent = parent
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0.225, 0)
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new(tint(app.color, 1.28), tint(app.color, 0.82))
+	g.Rotation = 90
+	g.Parent = b
+	local isz = math.floor(size * 0.78)
+	local inner = Instance.new("Frame")
+	inner.BackgroundTransparency = 1
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.fromScale(0.5, 0.5)
+	inner.Size = UDim2.fromOffset(isz, isz)
+	inner.Parent = b
+	app.iconFn(inner, isz)
+	b.Activated:Connect(function()
+		sfx.tap()
+		app.cb()
+	end)
+	return b
+end
+
+local TABS = { "Board", "Puzzle", "Words", "Arcade", "Config" }
+local TAB_OF = {
+	Chess = "Board", ["Sliding Block"] = "Puzzle", ["Super Slider"] = "Puzzle", ["Color Sort"] = "Puzzle",
+	["Find Word"] = "Words", ["Matching Cards"] = "Words", Snake = "Arcade", Sound = "Config",
+}
+local PAGE_OF = {
+	Chess = "chess", ["Sliding Block"] = "slide", ["Super Slider"] = "super", ["Color Sort"] = "color",
+	["Find Word"] = "word", ["Matching Cards"] = "match", Snake = "snake",
+}
+local DESC_OF = {
+	Snake = "Eat the apples. Gravity pulls you down! 120 levels.",
+	Sound = "Sound effects on / off",
+}
+local SOFT = Color3.fromRGB(190, 220, 255)
+
+local function buildHub()
+	local activeTab = "Board"
+	local rows = {} -- page -> {frame, stroke}
+	local tabButtons = {}
+
+	-- left panel: title + scrolling list of games
+	local ltitle = label(leftPanel, "", UDim2.new(1, -24, 0, 22), UDim2.fromOffset(14, 8), 13, SOFT, Enum.Font.GothamBold)
+	local list = Instance.new("ScrollingFrame")
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.Position = UDim2.fromOffset(8, 34)
+	list.Size = UDim2.new(1, -16, 1, -42)
+	list.ScrollBarThickness = 3
+	list.ScrollBarImageColor3 = Color3.fromRGB(110, 185, 255)
+	list.CanvasSize = UDim2.new()
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	list.ScrollingDirection = Enum.ScrollingDirection.Y
+	list.Parent = leftPanel
+	local ll = Instance.new("UIListLayout")
+	ll.Padding = UDim.new(0, 8)
+	ll.SortOrder = Enum.SortOrder.LayoutOrder
+	ll.Parent = list
+
+	local function makeRow(app, order)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, -6, 0, 70)
+		row.LayoutOrder = order
+		row.BorderSizePixel = 0
+		glassFill(row, Color3.fromRGB(40, 100, 230), Color3.fromRGB(14, 48, 150), 0.35)
+		row.Parent = list
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0, 14)
+		local st = strokeOf(row, Color3.fromRGB(110, 185, 255), 0.7, 1.5)
+		local ic = makeIcon(row, app, 50)
+		ic.Position = UDim2.fromOffset(10, 10)
+		label(row, app.title, UDim2.new(1, -150, 0, 18), UDim2.fromOffset(70, 9), 14)
+		local d = label(row, app.desc ~= "" and app.desc or (DESC_OF[app.title] or ""), UDim2.new(1, -78, 0, 30),
+			UDim2.fromOffset(70, 28), 11, SOFT, Enum.Font.Gotham)
+		d.TextWrapped = true
+		d.TextYAlignment = Enum.TextYAlignment.Top
+		if app.title == "Sound" then
+			ic.Active = false
+			-- switch
+			local sw = Instance.new("TextButton")
+			sw.Text = ""
+			sw.AutoButtonColor = false
+			sw.Size = UDim2.fromOffset(46, 24)
+			sw.Position = UDim2.new(1, -58, 0, 9)
+			sw.BorderSizePixel = 0
+			sw.Parent = row
+			Instance.new("UICorner", sw).CornerRadius = UDim.new(0.5, 0)
+			local knob = Instance.new("Frame")
+			knob.Size = UDim2.fromOffset(18, 18)
+			knob.BackgroundColor3 = Color3.new(1, 1, 1)
+			knob.BorderSizePixel = 0
+			knob.Parent = sw
+			Instance.new("UICorner", knob).CornerRadius = UDim.new(0.5, 0)
+			local function refresh()
+				sw.BackgroundColor3 = sfx.on and Color3.fromRGB(80, 200, 255) or Color3.fromRGB(60, 80, 130)
+				knob.Position = UDim2.fromOffset(sfx.on and 25 or 3, 3)
+			end
+			refresh()
+			sw.Activated:Connect(function()
+				app.cb()
+				refresh()
+			end)
+		else
+			local play = Instance.new("TextButton")
+			play.Text = "start"
+			play.AutoButtonColor = false
+			play.BackgroundColor3 = Color3.new(1, 1, 1)
+			play.BackgroundTransparency = 0.06
+			play.TextColor3 = Color3.fromRGB(20, 80, 200)
+			play.Font = Enum.Font.GothamBold
+			play.TextSize = 12
+			play.Size = UDim2.fromOffset(58, 22)
+			play.Position = UDim2.new(1, -68, 0, 8)
+			play.BorderSizePixel = 0
+			play.Parent = row
+			Instance.new("UICorner", play).CornerRadius = UDim.new(0.5, 0)
+			strokeOf(play, Color3.fromRGB(120, 210, 255), 0, 1.5)
+			play.Activated:Connect(function()
+				sfx.tap()
+				app.cb()
+			end)
+			rows[PAGE_OF[app.title]] = { frame = row, stroke = st }
+		end
+	end
+
+	local function showTab(name)
+		activeTab = name
+		for _, ch in ipairs(list:GetChildren()) do
+			if ch:IsA("Frame") then ch:Destroy() end
+		end
+		rows = {}
+		ltitle.Text = name:upper()
+		local n = 0
+		for _, app in ipairs(apps) do
+			if TAB_OF[app.title] == name then
+				n += 1
+				makeRow(app, n)
+			end
+		end
+		for t, b in pairs(tabButtons) do
+			local on = t == name
+			b.btn.BackgroundTransparency = on and 0.05 or 1
+			b.lbl.TextColor3 = on and Color3.new(1, 1, 1) or Color3.fromRGB(150, 190, 235)
+			b.dot.BackgroundColor3 = on and Color3.new(1, 1, 1) or Color3.fromRGB(150, 190, 235)
+		end
+	end
+
+	-- bottom tab bar
+	local tw = math.floor((WIN_W - GAP * 2 - 12) / #TABS)
+	for i, name in ipairs(TABS) do
+		local btn = Instance.new("TextButton")
+		btn.Text = ""
+		btn.AutoButtonColor = false
+		btn.Position = UDim2.fromOffset(6 + (i - 1) * tw, 5)
+		btn.Size = UDim2.fromOffset(tw - 4, TAB_H - 10)
+		btn.BorderSizePixel = 0
+		glassFill(btn, Color3.fromRGB(60, 150, 255), Color3.fromRGB(20, 80, 210), 1)
+		btn.Parent = tabBar
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0.5, 0)
+		local dot = Instance.new("Frame")
+		dot.Size = UDim2.fromOffset(8, 8)
+		dot.Rotation = 45
+		dot.BorderSizePixel = 0
+		dot.AnchorPoint = Vector2.new(0.5, 0.5)
+		dot.Position = UDim2.new(0.5, -math.floor(#name * 4.2) - 10, 0.5, 0)
+		dot.Parent = btn
+		local lbl = label(btn, name, UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 13, SOFT, Enum.Font.GothamMedium)
+		lbl.TextXAlignment = Enum.TextXAlignment.Center
+		tabButtons[name] = { btn = btn, lbl = lbl, dot = dot }
+		btn.Activated:Connect(function()
+			sfx.tap()
+			showTab(name)
+		end)
+	end
+
+	function selectCard(p)
+		if p ~= "menu" then
+			for title, page in pairs(PAGE_OF) do
+				if page == p and TAB_OF[title] ~= activeTab then showTab(TAB_OF[title]) end
+			end
+		end
+		for page, r in pairs(rows) do
+			local on = page == p
+			r.stroke.Transparency = on and 0.1 or 0.7
+			r.stroke.Color = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(110, 185, 255)
+		end
+	end
+
+	-- right panel when nothing is open: the BONA-FOX fox
+	do
+		local sz = math.floor(math.min(rightW * 0.46, contentH * 0.56))
+		for i, d in ipairs({ 1.5, 1.2 }) do
+			local rg = Instance.new("Frame")
+			rg.AnchorPoint = Vector2.new(0.5, 0.5)
+			rg.Position = UDim2.new(0.5, 0, 0.4, 0)
+			rg.Size = UDim2.fromOffset(math.floor(sz * d), math.floor(sz * d))
+			rg.BackgroundTransparency = 1
+			rg.Parent = hero
+			Instance.new("UICorner", rg).CornerRadius = UDim.new(0.5, 0)
+			strokeOf(rg, Color3.fromRGB(90, 180, 255), i == 1 and 0.8 or 0.6, 2)
+		end
+		local logo = foxLogo(hero, sz)
+		logo.AnchorPoint = Vector2.new(0.5, 0.5)
+		logo.Position = UDim2.new(0.5, 0, 0.4, 0)
+		local t = label(hero, "BONA-FOX ARCADE", UDim2.new(1, 0, 0, 36), UDim2.new(0, 0, 0.4, math.floor(sz * 0.62)), 26)
+		t.TextXAlignment = Enum.TextXAlignment.Center
+		local t2 = label(hero, "Pick a game on the left and press start", UDim2.new(1, 0, 0, 20), UDim2.new(0, 0, 0.4, math.floor(sz * 0.62) + 36), 13,
+			SOFT, Enum.Font.Gotham)
+		t2.TextXAlignment = Enum.TextXAlignment.Center
+		local t3 = label(hero, "7 games - 120 levels in every puzzle", UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0.4, math.floor(sz * 0.62) + 58), 12,
+			Color3.fromRGB(150, 225, 255), Enum.Font.GothamMedium)
+		t3.TextXAlignment = Enum.TextXAlignment.Center
+	end
+
+	-- footer: player name + FPS / ping
+	do
+		local mini = foxLogo(footer, FOOT_H - 4)
+		mini.Position = UDim2.fromOffset(6, 2)
+		label(footer, "BONA-FOX", UDim2.fromOffset(200, FOOT_H), UDim2.fromOffset(FOOT_H + 12, 0), 12)
+		local pill = Instance.new("Frame")
+		pill.Size = UDim2.fromOffset(150, FOOT_H - 2)
+		pill.Position = UDim2.new(1, -156, 0, 1)
+		pill.BorderSizePixel = 0
+		glassFill(pill, Color3.fromRGB(8, 22, 84), Color3.fromRGB(4, 10, 44), 0.1)
+		pill.Parent = footer
+		Instance.new("UICorner", pill).CornerRadius = UDim.new(0.5, 0)
+		strokeOf(pill, Color3.fromRGB(110, 185, 255), 0.6, 1)
+		local dotG = Instance.new("Frame")
+		dotG.Size = UDim2.fromOffset(7, 7)
+		dotG.Position = UDim2.fromOffset(12, math.floor((FOOT_H - 2 - 7) / 2))
+		dotG.BackgroundColor3 = Color3.new(1, 1, 1)
+		dotG.BorderSizePixel = 0
+		dotG.Parent = pill
+		Instance.new("UICorner", dotG).CornerRadius = UDim.new(0.5, 0)
+		local stat = label(pill, "-- FPS  -  -- ms", UDim2.new(1, -28, 1, 0), UDim2.fromOffset(26, 0), 11, Color3.new(1, 1, 1), Enum.Font.GothamMedium)
+		local RunService = game:GetService("RunService")
+		local frames, last = 0, os.clock()
+		RunService.RenderStepped:Connect(function()
+			frames += 1
+			local now = os.clock()
+			if now - last >= 0.5 then
+				local fps = math.floor(frames / (now - last) + 0.5)
+				frames, last = 0, now
+				local okp, ping = pcall(function() return lp:GetNetworkPing() * 1000 end)
+				stat.Text = ("%d FPS  -  %d ms"):format(fps, okp and math.floor(ping + 0.5) or 0)
+			end
+		end)
+	end
+
+	-- title bar pills: Home and Sound
+	do
+		local function pill(text, x, w, fn)
+			local b = Instance.new("TextButton")
+			b.Text = ""
+			b.AutoButtonColor = false
+			b.Size = UDim2.fromOffset(w, TITLE_H - 14)
+			b.Position = UDim2.fromOffset(x, 4)
+			b.BorderSizePixel = 0
+			glassFill(b, Color3.fromRGB(34, 92, 220), Color3.fromRGB(10, 36, 132))
+			b.Parent = titleBar
+			Instance.new("UICorner", b).CornerRadius = UDim.new(0.5, 0)
+			strokeOf(b, Color3.fromRGB(120, 195, 255), 0.35, 1.5)
+			local l = label(b, text, UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 12, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+			l.TextXAlignment = Enum.TextXAlignment.Center
+			b.Activated:Connect(function()
+				sfx.tap()
+				fn(l)
+			end)
+		end
+		local px0 = math.floor(WIN_W / 2 + math.min(300, math.floor(WIN_W * 0.36)) / 2 + 12)
+		pill("Home", px0, 62, function() showPage("menu") end)
+		pill(sfx.on and "Sound: On" or "Sound: Off", px0 + 70, 94, function(l)
+			sfx.on = not sfx.on
+			if sfx.on then sfx.tap() end
+			l.Text = sfx.on and "Sound: On" or "Sound: Off"
+		end)
+	end
+
+	showTab("Board")
+end
+buildHub()
+
 loadLevel(1)
 loadSS(1)
 FW.load(1)
 CS.load(1)
 MC.load(1)
+SN.load(1)
 showPage("menu")
