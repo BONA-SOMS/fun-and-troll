@@ -1,3 +1,20 @@
 --pls don't steal my script I spend so many time on it
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BONA-SOMS/fun-and-troll/refs/heads/main/mini%20game%20ui%202"))()
+local url = "https://raw.githubusercontent.com/BONA-SOMS/fun-and-troll/refs/heads/main/mini%20game%20ui%202"
+
+local success, err = pcall(function()
+local source = game:HttpGet(url)
+assert(type(source) == "string" and #source > 0, "Empty source")
+
+local func, compileError = loadstring(source)  
+assert(func, compileError)  
+
+func()
+
+end)
+
+if not success then
+warn("[BONA ERROR] " .. tostring(err))
+else
+print("[BONA] Script executed")
+end
