@@ -28,7 +28,7 @@ local CARD = Color3.fromRGB(16, 22, 42)
 local WHITE = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(150, 170, 205)
 
--- TEST.BONA custom assets
+-- BONA custom assets
 local FLOATING_ICON_IMAGE = "rbxassetid://11603715677"
 local WING_RIGHT_IMAGE = "rbxassetid://6322040181"
 local WING_LEFT_IMAGE = "rbxassetid://6322037950"
@@ -93,9 +93,9 @@ if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal
 
 local main = glass(holder, UDim2.new(0, 540, 1, 0), UDim2.new(0, 0, 0, 0))
 
--- TEST.BONA menu background (behind the existing menu controls)
+-- BONA menu background (behind the existing menu controls)
 local menuBackground = new("ImageLabel", {
-    Name = "TEST_BONA_MenuBackground",
+    Name = "BONA_MenuBackground",
     Size = UDim2.fromScale(1, 1),
     Position = UDim2.fromScale(0, 0),
     BackgroundTransparency = 1,
@@ -140,7 +140,7 @@ do
 end
 
 ---------------------------------------------------------------- SIDEBAR
-txt(main, "◆  TEST.BONA", UDim2.new(0, 16, 0, 14), UDim2.new(0, 110, 0, 22), {font = Enum.Font.GothamBold, size = 14})
+txt(main, "◆  BONA", UDim2.new(0, 16, 0, 14), UDim2.new(0, 110, 0, 22), {font = Enum.Font.GothamBold, size = 14})
 new("Frame", {Position = UDim2.new(0, 132, 0, 12), Size = UDim2.new(0, 1, 1, -24), BackgroundColor3 = WHITE,
 	BackgroundTransparency = 0.88, BorderSizePixel = 0}, main)
 local nav = new("ScrollingFrame", {Position = UDim2.new(0, 8, 0, 54), Size = UDim2.new(0, 118, 1, -64), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 2, ScrollBarImageColor3 = BLUE, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y}, main)
@@ -383,7 +383,7 @@ do
 		if ok1 then av.Image = img end
 	end)
 
-	txt(hero, "TEST.BONA  ♛", UDim2.new(0, 92, 0, 12), UDim2.new(1, -104, 0, 26), {font = Enum.Font.GothamBold, size = 17})
+	txt(hero, "BONA  ♛", UDim2.new(0, 92, 0, 12), UDim2.new(1, -104, 0, 26), {font = Enum.Font.GothamBold, size = 17})
 	txt(hero, "By BONA", UDim2.new(0, 92, 0, 38), UDim2.new(1, -104, 0, 16), {color = MUTED, size = 12})
 	local badge = new("TextLabel", {Text = "Premium", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
 		BackgroundColor3 = INK, BackgroundTransparency = 0.3, Position = UDim2.new(0, 92, 0, 58), Size = UDim2.new(0, 84, 0, 22)}, hero)
@@ -395,9 +395,9 @@ do
 	-- quick access (jumps to tabs)
 	local qa = new("Frame", {Position = UDim2.new(0, 12, 0, 92), Size = UDim2.new(1, -24, 0, 34), BackgroundTransparency = 1}, hero)
 	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8)}, qa)
-	for _, name in ipairs({"Player", "Movement", "Visuals"}) do
+	for _, name in ipairs({"Player", "Movement", "Executor", "Visuals"}) do
 		local b = new("TextButton", {Text = name, Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = WHITE,
-			BackgroundColor3 = INK, BackgroundTransparency = 0.35, Size = UDim2.new(1 / 3, -6, 1, 0), AutoButtonColor = false}, qa)
+			BackgroundColor3 = INK, BackgroundTransparency = 0.35, Size = UDim2.new(1 / 4, -6, 1, 0), AutoButtonColor = false}, qa)
 		corner(b, 10); stroke(b, 0.6, BLUE)
 		b.MouseButton1Click:Connect(function() if pages[name] then selectTab(name) end end)
 	end
@@ -2354,6 +2354,192 @@ do
 	refreshSel()
 end
 
+---------------------------------------------------------------- EXECUTOR (code editor with line numbers, New Line button, undo, execute)
+do
+	local RED = Color3.fromRGB(255, 120, 130)
+	local GREEN = Color3.fromRGB(120, 230, 165)
+
+	local pExec = addTab("Executor")
+	local exCard = listCard(pExec, "BONA Executor")
+
+	-- editor frame -----------------------------------------------------
+	local ed = new("Frame", {Size = UDim2.new(1, 0, 0, 190), BackgroundColor3 = INK, BackgroundTransparency = 0.25,
+		BorderSizePixel = 0, ClipsDescendants = true}, exCard)
+	corner(ed, 10); stroke(ed, 0.6, BLUE)
+
+	local scroll = new("ScrollingFrame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
+		ScrollBarThickness = 3, ScrollBarImageColor3 = BLUE, ScrollingDirection = Enum.ScrollingDirection.XY,
+		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.XY}, ed)
+	new("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 4),
+		PaddingRight = UDim.new(0, 8)}, scroll)
+
+	local FONT, SIZE = Enum.Font.Code, 13
+	local gutter = new("TextLabel", {Size = UDim2.new(0, 34, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1, Font = FONT, TextSize = SIZE, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Right,
+		TextYAlignment = Enum.TextYAlignment.Top, Text = "1"}, scroll)
+	new("Frame", {Position = UDim2.new(0, 38, 0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = WHITE,
+		BackgroundTransparency = 0.85, BorderSizePixel = 0}, scroll)
+
+	local box = new("TextBox", {Position = UDim2.new(0, 46, 0, 0), Size = UDim2.new(0, 280, 0, 170),
+		AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 1, BorderSizePixel = 0, Font = FONT, TextSize = SIZE,
+		TextColor3 = Color3.fromRGB(235, 240, 255), PlaceholderText = "-- write your script here", PlaceholderColor3 = MUTED,
+		MultiLine = true, TextWrapped = false, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top, Text = '-- BONA Executor\nprint("Hello from BONA")'}, scroll)
+
+	-- status line --------------------------------------------------------
+	local status = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1,
+		Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = MUTED, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top, Text = "Ready"}, exCard)
+	local function setStatus(msg, color)
+		status.Text = msg
+		status.TextColor3 = color or MUTED
+	end
+
+	-- line numbers -------------------------------------------------------
+	local function lineCount(text)
+		local _, n = text:gsub("\n", "")
+		return n + 1
+	end
+	local function refreshGutter()
+		local n = lineCount(box.Text)
+		local parts = table.create(n)
+		for i = 1, n do parts[i] = tostring(i) end
+		gutter.Text = table.concat(parts, "\n")
+	end
+
+	-- undo history -------------------------------------------------------
+	local hist, suppress, snapTok = {box.Text}, false, 0
+	local function snapshot()
+		if box.Text ~= hist[#hist] then
+			table.insert(hist, box.Text)
+			if #hist > 40 then table.remove(hist, 1) end
+		end
+	end
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		refreshGutter()
+		if suppress then return end
+		snapTok += 1
+		local tk = snapTok
+		task.delay(0.8, function() if tk == snapTok then snapshot() end end)
+	end)
+	refreshGutter()
+
+	-- cursor tracking (tapping a button unfocuses the box, so remember the last position) ----
+	local lastCursor
+	box:GetPropertyChangedSignal("CursorPosition"):Connect(function()
+		if box.CursorPosition > 0 then lastCursor = box.CursorPosition end
+	end)
+
+	local function scrollToCursor(pos)
+		local before = box.Text:sub(1, pos - 1)
+		local line = lineCount(before) - 1
+		local lines = lineCount(box.Text)
+		local lh = (box.TextBounds.Y > 0) and (box.TextBounds.Y / lines) or SIZE
+		local y = line * lh
+		local view = scroll.AbsoluteWindowSize.Y - 14
+		local cp = scroll.CanvasPosition
+		if y < cp.Y then
+			scroll.CanvasPosition = Vector2.new(cp.X, y)
+		elseif y + lh > cp.Y + view then
+			scroll.CanvasPosition = Vector2.new(cp.X, y + lh - view)
+		end
+	end
+
+	-- insert text at the cursor; newline mode keeps (and extends) the indentation ---------
+	local function insertAtCursor(ins, newline)
+		snapshot()
+		local text = box.Text
+		local pos = math.clamp(lastCursor or (#text + 1), 1, #text + 1)
+		local before, after = text:sub(1, pos - 1), text:sub(pos)
+		local add = ins
+		if newline then
+			local cur = before:match("([^\n]*)$") or ""
+			local indent = cur:match("^[ \t]*") or ""
+			local t = cur:match("^%s*(.-)%s*$") or ""
+			if t:match("then$") or t:match("do$") or t == "else" or t:match("repeat$") or t:match("{$")
+				or (t:match("%)$") and t:find("function", 1, true)) then
+				indent = indent .. "    "
+			end
+			add = "\n" .. indent
+		end
+		box.Text = before .. add .. after
+		local newPos = #before + #add + 1
+		lastCursor = newPos
+		box:CaptureFocus()
+		task.wait()
+		box.CursorPosition = newPos
+		scrollToCursor(newPos)
+	end
+
+	-- buttons -------------------------------------------------------------
+	local function btnRow(items)
+		local r = new("Frame", {Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1}, exCard)
+		new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6)}, r)
+		local n = #items
+		for _, it in ipairs(items) do
+			local b = new("TextButton", {Text = it[1], Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+				BackgroundColor3 = it.accent and BLUE2 or WHITE, BackgroundTransparency = it.accent and 0.15 or 0.9,
+				AutoButtonColor = false, Size = UDim2.new(1 / n, -(6 * (n - 1)) / n, 1, 0)}, r)
+			corner(b, 10); stroke(b, 0.75, it.accent and BLUE or WHITE)
+			b.Activated:Connect(it[2])
+		end
+	end
+
+	local function runCode()
+		local code = box.Text
+		if (code:gsub("%s", "")) == "" then setStatus("Nothing to run") return end
+		local loader = loadstring or load
+		if not loader then setStatus("loadstring is not available here", RED) return end
+		local fn, err = loader(code)
+		if not fn then setStatus("Syntax error: " .. tostring(err), RED) return end
+		setStatus("Running...")
+		task.spawn(function()
+			local ok1, e = pcall(fn)
+			if ok1 then setStatus("Executed OK", GREEN) else setStatus("Error: " .. tostring(e), RED) end
+		end)
+	end
+
+	btnRow({
+		{"New Line", function() insertAtCursor("", true) end},
+		{"Tab", function() insertAtCursor("    ", false) end},
+		{"Undo", function()
+			snapshot()
+			if #hist > 1 then
+				table.remove(hist)
+				suppress = true
+				box.Text = hist[#hist]
+				suppress = false
+				refreshGutter()
+				setStatus("Undone")
+			end
+		end},
+		{"Clear", function()
+			snapshot()
+			box.Text = ""
+			lastCursor = nil
+			setStatus("Cleared")
+		end},
+	})
+	btnRow({
+		{"Execute", runCode, accent = true},
+		{"Copy", function()
+			local fn = setclipboard or toclipboard
+			if fn then pcall(fn, box.Text) setStatus("Copied", GREEN) else setStatus("Clipboard is not available here", RED) end
+		end},
+		{"Paste", function()
+			local fn = readclipboard or getclipboard
+			if not fn then setStatus("Clipboard is not available here", RED) return end
+			local ok1, clip = pcall(fn)
+			if ok1 and type(clip) == "string" and clip ~= "" then
+				insertAtCursor(clip, false)
+				setStatus("Pasted", GREEN)
+			else
+				setStatus("Clipboard is empty", RED)
+			end
+		end},
+	})
+end
+
 local pVis = addTab("Visuals")
 local vc = listCard(pVis, "World & Players")
 toggle(vc, "Player ESP", function(v)
@@ -2444,11 +2630,11 @@ end)
 selectTab("Dashboard")
 
 ---------------------------------------------------------------- OPEN / CLOSE
--- TEST.BONA image-only floating launcher.
+-- BONA image-only floating launcher.
 -- No jumpscare code or sound is included.
 
 local fab = new("ImageButton", {
-    Name = "TEST_BONA_FloatingIcon",
+    Name = "BONA_FloatingIcon",
     Image = FLOATING_ICON_IMAGE,
     ImageTransparency = 0,
     ScaleType = Enum.ScaleType.Fit,
@@ -2465,7 +2651,7 @@ local fab = new("ImageButton", {
 -- Wings that spin around the floating icon.
 -- A separate frame sits behind the icon, follows it when it is dragged and rotates forever.
 local wingHolder = new("Frame", {
-    Name = "TEST_BONA_WingSpin",
+    Name = "BONA_WingSpin",
     AnchorPoint = Vector2.new(0.5, 0.5),
     Size = UDim2.new(0, WING_RING_SIZE, 0, WING_RING_SIZE),
     BackgroundTransparency = 1,
@@ -2743,7 +2929,7 @@ UIS.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("[TEST.BONA] Universal Hub loaded")
-print("[TEST.BONA] Floating icon: 11603715677")
-print("[TEST.BONA] Wings: left 6322037950 / right 6322040181, flapping")
-print("[TEST.BONA] Menu background: 10110319522")
+print("[BONA] Universal Hub loaded")
+print("[BONA] Floating icon: 11603715677")
+print("[BONA] Wings: left 6322037950 / right 6322040181, flapping")
+print("[BONA] Menu background: 10110319522")
