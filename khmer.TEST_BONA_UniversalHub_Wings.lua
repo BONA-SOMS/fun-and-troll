@@ -1568,7 +1568,11 @@ do
 
 	---------------------------------------------------------------- floating on-screen buttons (BONA style)
 	local btnFrame = new("Frame", {AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -12, 1, -120),
-		Size = UDim2.new(0, 160, 0, 126), BackgroundTransparency = 1, Visible = UIS.TouchEnabled}, gui)
+		Size = UDim2.new(0, 160, 0, 126), BackgroundTransparency = 1, Visible = false}, gui)
+	local wantButtons = UIS.TouchEnabled
+	local function refreshButtons() btnFrame.Visible = wantButtons and not holder.Visible end
+	holder:GetPropertyChangedSignal("Visible"):Connect(refreshButtons)
+	refreshButtons()
 	new("UIGridLayout", {CellSize = UDim2.new(0, 76, 0, 34), CellPadding = UDim2.new(0, 8, 0, 8),
 		SortOrder = Enum.SortOrder.LayoutOrder}, btnFrame)
 	local function fbtn(name, order, onDown, onUp)
@@ -1606,7 +1610,7 @@ do
 	tPeekR = toggle(mvCard, "Peek Right  (E)", function(v) if v then StartPeek("Right") else EndPeek("Right") end end)
 	button(mvCard, "Slide", function() task.spawn(Slide) end)
 	toggle(mvCard, "Walking mode (slower until Run)", function(v) P.Walking = v UpdateBase() end)
-	toggle(mvCard, "On-screen buttons", function(v) btnFrame.Visible = v end, UIS.TouchEnabled)
+	toggle(mvCard, "On-screen buttons (shown when the hub is closed)", function(v) wantButtons = v refreshButtons() end, UIS.TouchEnabled)
 
 	local function ParseId(raw)
 		local t = tostring(raw):gsub("%s+", ""):lower()
@@ -2489,13 +2493,23 @@ do
 		local code = box.Text
 		if (code:gsub("%s", "")) == "" then setStatus("Nothing to run") return end
 		local loader = loadstring or load
-		if not loader then setStatus("loadstring is not available here", RED) return end
+		if not loader then setStatus("Not work: loadstring is not available here", RED) return end
 		local fn, err = loader(code)
-		if not fn then setStatus("Syntax error: " .. tostring(err), RED) return end
+		if not fn then
+			setStatus("Not work: syntax error - " .. tostring(err), RED)
+			warn("[BONA Executor] Not work: syntax error - " .. tostring(err))
+			return
+		end
 		setStatus("Running...")
 		task.spawn(function()
 			local ok1, e = pcall(fn)
-			if ok1 then setStatus("Executed OK", GREEN) else setStatus("Error: " .. tostring(e), RED) end
+			if ok1 then
+				setStatus("Successfully", GREEN)
+				print("[BONA Executor] Successfully")
+			else
+				setStatus("Not work: " .. tostring(e), RED)
+				warn("[BONA Executor] Not work: " .. tostring(e))
+			end
 		end)
 	end
 
@@ -2575,6 +2589,101 @@ txt(avatarPanel, "Account age", UDim2.new(0, 14, 0, 258), UDim2.new(1, -28, 0, 1
 txt(avatarPanel, lp.AccountAge .. " days", UDim2.new(0, 14, 0, 274), UDim2.new(1, -28, 0, 16), {size = 12})
 txt(avatarPanel, "User ID", UDim2.new(0, 14, 0, 296), UDim2.new(1, -28, 0, 14), {color = MUTED, size = 11})
 txt(avatarPanel, tostring(lp.UserId), UDim2.new(0, 14, 0, 310), UDim2.new(1, -28, 0, 14), {size = 11})
+
+-- A / C switch: A = avatar preview, C = console (with a Clear button)
+do
+	local LogService = game:GetService("LogService")
+
+	-- everything created above belongs to the avatar view
+	local title
+	local items = {}
+	for _, o in ipairs(avatarPanel:GetChildren()) do
+		if o:IsA("GuiObject") then
+			if not title and o:IsA("TextLabel") and o.Text == "Avatar" then title = o else table.insert(items, o) end
+		end
+	end
+	if title then title.Size = UDim2.new(1, -90, 0, 16) end
+
+	local function tabBtn(text, x)
+		local b = new("TextButton", {Text = text, Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+			BackgroundColor3 = INK, BackgroundTransparency = 0.3, AutoButtonColor = false,
+			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, x, 0, 8), Size = UDim2.new(0, 24, 0, 24)}, avatarPanel)
+		corner(b, 12); stroke(b, 0.6, BLUE)
+		return b
+	end
+	local btnA, btnC = tabBtn("A", -42), tabBtn("C", -12)
+
+	-- console view
+	local cons = new("Frame", {Position = UDim2.new(0, 0, 0, 40), Size = UDim2.new(1, 0, 1, -40), BackgroundTransparency = 1,
+		Visible = false}, avatarPanel)
+	local logScroll = new("ScrollingFrame", {Position = UDim2.new(0, 10, 0, 0), Size = UDim2.new(1, -20, 1, -48),
+		BackgroundColor3 = INK, BackgroundTransparency = 0.35, BorderSizePixel = 0, ScrollBarThickness = 3,
+		ScrollBarImageColor3 = BLUE, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollingDirection = Enum.ScrollingDirection.Y}, cons)
+	corner(logScroll, 10); stroke(logScroll, 0.7, BLUE)
+	new("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 6),
+		PaddingRight = UDim.new(0, 6)}, logScroll)
+	new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, logScroll)
+
+	local clearBtn = new("TextButton", {Text = "Clear", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+		BackgroundColor3 = BLUE2, BackgroundTransparency = 0.2, AutoButtonColor = false, AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 10, 1, -10), Size = UDim2.new(1, -20, 0, 30)}, cons)
+	corner(clearBtn, 10); stroke(clearBtn, 0.5, BLUE)
+
+	local LINE_COLORS = {
+		[Enum.MessageType.MessageOutput] = WHITE,
+		[Enum.MessageType.MessageWarning] = Color3.fromRGB(255, 210, 110),
+		[Enum.MessageType.MessageError] = Color3.fromRGB(255, 120, 130),
+		[Enum.MessageType.MessageInfo] = BLUE,
+	}
+	local lines, order, MAX_LINES = {}, 0, 200
+
+	local function addLine(msg, mtype)
+		local atBottom = logScroll.CanvasPosition.Y + logScroll.AbsoluteWindowSize.Y >= logScroll.AbsoluteCanvasSize.Y - 8
+		order += 1
+		local l = new("TextLabel", {LayoutOrder = order, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1, Font = Enum.Font.Code, TextSize = 10, TextColor3 = LINE_COLORS[mtype] or WHITE,
+			TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
+			Text = tostring(msg)}, logScroll)
+		table.insert(lines, l)
+		if #lines > MAX_LINES then table.remove(lines, 1):Destroy() end
+		if atBottom then
+			task.spawn(function()
+				task.wait()
+				logScroll.CanvasPosition = Vector2.new(0, 1e6)
+			end)
+		end
+	end
+
+	-- show recent output right away, then follow new messages
+	local history = LogService:GetLogHistory()
+	for i = math.max(1, #history - 39), #history do
+		addLine(history[i].message, history[i].messageType)
+	end
+	LogService.MessageOut:Connect(function(message, mtype) addLine(message, mtype) end)
+
+	clearBtn.Activated:Connect(function()
+		for _, l in ipairs(lines) do l:Destroy() end
+		lines = {}
+	end)
+
+	local function setMode(m)
+		for _, o in ipairs(items) do o.Visible = (m == "A") end
+		cons.Visible = (m == "C")
+		if title then title.Text = (m == "A") and "Avatar" or "Console" end
+		btnA.BackgroundColor3 = (m == "A") and BLUE2 or INK
+		btnC.BackgroundColor3 = (m == "C") and BLUE2 or INK
+		if m == "C" then
+			task.spawn(function()
+				task.wait()
+				logScroll.CanvasPosition = Vector2.new(0, 1e6)
+			end)
+		end
+	end
+	btnA.Activated:Connect(function() setMode("A") end)
+	btnC.Activated:Connect(function() setMode("C") end)
+	setMode("A")
+end
 
 loadAvatar = function()
 	task.spawn(function()
