@@ -2491,6 +2491,68 @@ do
 	refreshSel()
 end
 
+---------------------------------------------------------------- ANTI LAG (lighter graphics; the executor loop turns it on automatically)
+local ANTILAG = {on = false}
+do
+	local Lighting = game:GetService("Lighting")
+	local saved = {}            -- instance -> original Enabled value
+	local addedConns = {}
+	local savedQuality, savedShadows
+	local gen = 0
+
+	local function lighten(inst)
+		if inst:IsA("ParticleEmitter") or inst:IsA("Trail") or inst:IsA("Beam") or inst:IsA("Fire") or inst:IsA("Smoke")
+			or inst:IsA("Sparkles") or inst:IsA("BloomEffect") or inst:IsA("BlurEffect") or inst:IsA("SunRaysEffect")
+			or inst:IsA("DepthOfFieldEffect") or inst:IsA("ColorCorrectionEffect") then
+			if inst:FindFirstAncestor("BONA_LocalVFX") then return end   -- keep the hub's own death effects
+			if saved[inst] == nil then saved[inst] = inst.Enabled end
+			inst.Enabled = false
+		end
+	end
+
+	-- scan in small slices so turning it on never hitches the game
+	local function scan(root, myGen)
+		local n = 0
+		for _, d in ipairs(root:GetDescendants()) do
+			if myGen ~= gen then return end
+			lighten(d)
+			n += 1
+			if n % 600 == 0 then task.wait() end
+		end
+	end
+
+	function ANTILAG.set(v)
+		if v == ANTILAG.on then return end
+		ANTILAG.on = v
+		gen += 1
+		local myGen = gen
+		for _, c in ipairs(addedConns) do c:Disconnect() end
+		addedConns = {}
+		if v then
+			pcall(function()
+				local rs = settings().Rendering
+				savedQuality = rs.QualityLevel
+				rs.QualityLevel = Enum.QualityLevel.Level01
+			end)
+			savedShadows = Lighting.GlobalShadows
+			Lighting.GlobalShadows = false
+			for _, root in ipairs({workspace, Lighting}) do
+				table.insert(addedConns, root.DescendantAdded:Connect(lighten))
+				task.spawn(scan, root, myGen)
+			end
+		else
+			pcall(function()
+				if savedQuality then settings().Rendering.QualityLevel = savedQuality end
+			end)
+			if savedShadows ~= nil then Lighting.GlobalShadows = savedShadows end
+			for inst, was in pairs(saved) do
+				if inst.Parent then pcall(function() inst.Enabled = was end) end
+			end
+			saved = {}
+		end
+	end
+end
+
 ---------------------------------------------------------------- EXECUTOR (code editor with line numbers, New Line button, undo, execute)
 do
 	local RED = Color3.fromRGB(255, 120, 130)
@@ -2551,6 +2613,14 @@ do
 		task.delay(0.12, function() if tk == gTok then refreshGutter() end end)
 	end
 
+	-- grow the editor so a pasted script is shown in full (up to a tall limit, then it scrolls)
+	local function fitEditor()
+		local lines = lineCount(box.Text)
+		local lh = (box.TextBounds.Y > 0) and (box.TextBounds.Y / lines) or (SIZE + 2)
+		ed.Size = UDim2.new(1, 0, 0, math.clamp(math.floor(lines * lh) + 24, 190, 520))
+	end
+	box:GetPropertyChangedSignal("TextBounds"):Connect(fitEditor)
+
 	-- undo history -------------------------------------------------------
 	local hist, suppress, snapTok = {box.Text}, false, 0
 	local function snapshot()
@@ -2559,8 +2629,19 @@ do
 			if #hist > 40 then table.remove(hist, 1) end
 		end
 	end
+	local lastLen = #box.Text
 	box:GetPropertyChangedSignal("Text"):Connect(function()
-		scheduleGutter()
+		local len = #box.Text
+		if math.abs(len - lastLen) > 60 then
+			-- looks like a paste or a load: show everything right now (no delay), grow the editor, jump to the top
+			gTok += 1
+			refreshGutter()
+			fitEditor()
+			scroll.CanvasPosition = Vector2.new(0, 0)
+		else
+			scheduleGutter()
+		end
+		lastLen = len
 		if suppress then return end
 		snapTok += 1
 		local tk = snapTok
@@ -2669,14 +2750,14 @@ do
 	-- clipboard helpers (tries every common executor function name)
 	local function getClip()
 		local fn = readclipboard or getclipboard or getclipboardtext or get_clipboard or fromclipboard
-			or (Clipboard and Clipboard.get)
+			or (Clipboard and Clipboard.get) or (syn and syn.get_clipboard)
 		if not fn then return nil, "unavailable" end
 		local ok1, clip = pcall(fn)
 		if ok1 and type(clip) == "string" and clip ~= "" then return clip end
 		return nil, "empty"
 	end
 	local function setClip(text)
-		local fn = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
+		local fn = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set) or (syn and syn.write_clipboard)
 		if not fn then return false end
 		return (pcall(fn, text))
 	end
@@ -2768,34 +2849,255 @@ do
 	})
 	local srcRow = new("Frame", {Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1}, exCard)
 	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6)}, srcRow)
-	local srcBox = new("TextBox", {Size = UDim2.new(0.68, -3, 1, 0), BackgroundColor3 = INK, BackgroundTransparency = 0.3,
-		BorderSizePixel = 0, TextColor3 = WHITE, PlaceholderText = "file name or https:// link", PlaceholderColor3 = MUTED,
+	local srcBox = new("TextBox", {Size = UDim2.new(0.5, -4, 1, 0), BackgroundColor3 = INK, BackgroundTransparency = 0.3,
+		BorderSizePixel = 0, TextColor3 = WHITE, PlaceholderText = "GitHub raw link or file name", PlaceholderColor3 = MUTED,
 		Font = Enum.Font.Gotham, TextSize = 12, ClearTextOnFocus = false, Text = "", TextXAlignment = Enum.TextXAlignment.Left}, srcRow)
 	corner(srcBox, 10); stroke(srcBox, 0.7, BLUE)
 	new("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, srcBox)
-	local runSrc = new("TextButton", {Text = "Run file / link", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
-		BackgroundColor3 = BLUE2, BackgroundTransparency = 0.15, AutoButtonColor = false, Size = UDim2.new(0.32, -3, 1, 0)}, srcRow)
+	local runSrc = new("TextButton", {Text = "Run", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+		BackgroundColor3 = BLUE2, BackgroundTransparency = 0.15, AutoButtonColor = false, Size = UDim2.new(0.25, -4, 1, 0)}, srcRow)
 	corner(runSrc, 10); stroke(runSrc, 0.5, BLUE)
+	---------------------------------------------------------------- LINKS (GitHub raw, gist, pastebin, or a whole loadstring line)
+	local function normalizeUrl(ref)
+		local gh = ref:match("^gh:(.+)$")                       -- shortcut: gh:user/repo/branch/path
+		if gh then return "https://raw.githubusercontent.com/" .. gh end
+		local url = ref:match("https?://[^%s\"')]+")              -- also works if you paste: loadstring(game:HttpGet("..."))()
+		if not url then return nil end
+		local u, r, rest = url:match("^https?://github%.com/([^/]+)/([^/]+)/blob/(.+)$")
+		if u then return ("https://raw.githubusercontent.com/%s/%s/%s"):format(u, r, rest) end
+		u, r, rest = url:match("^https?://github%.com/([^/]+)/([^/]+)/raw/(.+)$")
+		if u then return ("https://raw.githubusercontent.com/%s/%s/%s"):format(u, r, rest) end
+		u, r = url:match("^https?://gist%.github%.com/([^/]+)/(%w+)")
+		if u and not url:find("/raw", 1, true) then return ("https://gist.githubusercontent.com/%s/%s/raw"):format(u, r) end
+		r = url:match("^https?://pastebin%.com/(%w+)$")
+		if r then return "https://pastebin.com/raw/" .. r end
+		return url
+	end
+
+	local function httpGet(url)
+		local ok1, res = pcall(function() return game:HttpGet(url) end)
+		if ok1 and type(res) == "string" and res ~= "" then return res end
+		local req = request or http_request or (syn and syn.request) or (http and http.request)
+		if req then
+			local ok2, r = pcall(req, {Url = url, Method = "GET"})
+			if ok2 and type(r) == "table" and type(r.Body) == "string" and r.Body ~= ""
+				and (r.StatusCode == nil or r.StatusCode < 400) then
+				return r.Body
+			end
+		end
+		return nil
+	end
+
+	local function loadSource(ref)
+		local url = normalizeUrl(ref)
+		if url then
+			local code = httpGet(url)
+			if code then return code, url end
+			return nil, "could not download " .. url
+		end
+		local ok1, code = pcall(function() return readfile(ref) end)
+		if ok1 and type(code) == "string" and code ~= "" then return code, ref end
+		return nil, "could not load " .. ref
+	end
+
+	local loadBtn = new("TextButton", {Text = "Load", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+		BackgroundColor3 = WHITE, BackgroundTransparency = 0.9, AutoButtonColor = false, Size = UDim2.new(0.25, -4, 1, 0)}, srcRow)
+	corner(loadBtn, 10); stroke(loadBtn, 0.75, WHITE)
+
 	runSrc.Activated:Connect(function()
 		local ref = srcBox.Text:match("^%s*(.-)%s*$")
 		if ref == "" then setStatus("Type a file name or a link first", RED) return end
 		setStatus("Loading...")
 		task.spawn(function()
-			local ok1, code
-			if ref:match("^https?://") then
-				ok1, code = pcall(function() return game:HttpGet(ref) end)
-			else
-				ok1, code = pcall(function() return readfile(ref) end)
-			end
-			if ok1 and type(code) == "string" and code ~= "" then
+			local code, info = loadSource(ref)
+			if code then
 				runSource(code)
 			else
-				setStatus("Not work: could not load " .. ref, RED)
+				setStatus("Not work: " .. info, RED)
 				popup(false, "Not work")
-				warn("[BONA Executor] Not work: could not load " .. ref)
+				warn("[BONA Executor] Not work: " .. info)
 			end
 		end)
 	end)
+	loadBtn.Activated:Connect(function()
+		local ref = srcBox.Text:match("^%s*(.-)%s*$")
+		if ref == "" then setStatus("Type a file name or a link first", RED) return end
+		setStatus("Loading...")
+		task.spawn(function()
+			local code, info = loadSource(ref)
+			if code then
+				snapshot()
+				box.Text = code          -- the paste handler shows everything instantly
+				setStatus("Loaded " .. #code .. " characters" .. (#code > 190000 and " (too big for the box, use Run instead)" or ""), GREEN)
+			else
+				setStatus("Not work: " .. info, RED)
+				popup(false, "Not work")
+			end
+		end)
+	end)
+
+	---------------------------------------------------------------- LOOP (Loop / Unloop, times, speed, anti lag)
+	new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1, Font = Enum.Font.GothamBold, TextSize = 12,
+		TextColor3 = BLUE, TextXAlignment = Enum.TextXAlignment.Left, Text = "Loop   (times: 0 = forever)"}, exCard)
+
+	local UNITS = {{"ms", 0.001}, {"sec", 1}, {"min", 60}}
+	local unitIdx = 2
+	local lrow = new("Frame", {Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1}, exCard)
+	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6)}, lrow)
+	local function numBox(placeholder, w, def)
+		local b = new("TextBox", {Size = UDim2.new(w, -4, 1, 0), BackgroundColor3 = INK, BackgroundTransparency = 0.3,
+			BorderSizePixel = 0, TextColor3 = WHITE, PlaceholderText = placeholder, PlaceholderColor3 = MUTED,
+			Font = Enum.Font.GothamMedium, TextSize = 12, ClearTextOnFocus = false, Text = def,
+			TextXAlignment = Enum.TextXAlignment.Center}, lrow)
+		corner(b, 10); stroke(b, 0.7, BLUE)
+		return b
+	end
+	local timesBox = numBox("times (0=forever)", 0.36, "0")
+	local everyBox = numBox("every", 0.30, "1")
+	local unitBtn = new("TextButton", {Text = "sec", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+		BackgroundColor3 = WHITE, BackgroundTransparency = 0.9, AutoButtonColor = false, Size = UDim2.new(0.34, -4, 1, 0)}, lrow)
+	corner(unitBtn, 10); stroke(unitBtn, 0.75, WHITE)
+	unitBtn.Activated:Connect(function()
+		unitIdx = unitIdx % #UNITS + 1
+		unitBtn.Text = UNITS[unitIdx][1]
+	end)
+
+	local loop = {running = false, token = 0}
+	local autoAnti = false
+	local antiSet, loopInfo
+
+	local function releaseAnti()
+		if autoAnti then
+			autoAnti = false
+			ANTILAG.set(false)
+			if antiSet then antiSet(false, true) end
+		end
+	end
+
+	local function stopLoop()
+		if not loop.running then setStatus("No loop is running") return end
+		loop.token += 1          -- the running loop sees this and stops
+		loop.running = false
+		releaseAnti()
+		if loopInfo then loopInfo.Text = "Unlooped" end
+		setStatus("Unlooped", GREEN)
+	end
+
+	local function startLoop()
+		if loop.running then setStatus("Loop is already running (press Unloop first)", RED) return end
+		local code = box.Text
+		if (code:gsub("%s", "")) == "" then setStatus("Nothing to loop") return end
+		local loader = loadstring or load
+		if not loader then
+			setStatus("Not work: loadstring is not available here", RED)
+			popup(false, "Not work")
+			return
+		end
+		local fn, err = loader(code)
+		if not fn then
+			setStatus("Not work: syntax error - " .. tostring(err), RED)
+			popup(false, "Not work")
+			warn("[BONA Executor] Not work: syntax error - " .. tostring(err))
+			return
+		end
+
+		local times = math.max(0, math.floor(tonumber(timesBox.Text) or 0))
+		local every = math.max(0, tonumber(everyBox.Text) or 0) * UNITS[unitIdx][2]
+
+		loop.running = true
+		loop.token += 1
+		local tk = loop.token
+
+		-- anti lag helps the loop run smoothly, so it switches on by itself
+		if not ANTILAG.on then
+			ANTILAG.set(true)
+			if antiSet then antiSet(true, true) end
+			autoAnti = true
+		end
+		setStatus("Looping...", GREEN)
+
+		task.spawn(function()
+			local runs, lastUi = 0, 0
+			local failed = false
+			while loop.running and tk == loop.token do
+				local ok1, e = pcall(fn)
+				if tk ~= loop.token then return end
+				runs += 1
+				if not ok1 then
+					failed = true
+					setStatus("Not work: " .. tostring(e), RED)
+					popup(false, "Not work")
+					warn("[BONA Executor] Loop Not work: " .. tostring(e))
+					break
+				end
+				local now = os.clock()
+				if now - lastUi > 0.2 then
+					lastUi = now
+					loopInfo.Text = "Looping...  run " .. runs .. ((times > 0) and (" / " .. times) or "  (forever)")
+				end
+				if times > 0 and runs >= times then break end
+				task.wait(every)     -- even 0 yields one frame, so the game never freezes
+			end
+			if tk ~= loop.token then return end
+			loop.running = false
+			releaseAnti()
+			if failed then
+				loopInfo.Text = "Stopped after " .. runs .. " run(s) because of an error"
+			else
+				loopInfo.Text = "Loop finished: " .. runs .. " run(s)"
+				setStatus("Loop finished", GREEN)
+				popup(true, "Successfully")
+			end
+		end)
+	end
+
+	btnRow({
+		{"Loop", startLoop, accent = true},
+		{"Unloop", stopLoop},
+	})
+	antiSet = toggle(exCard, "Anti Lag  (turns on by itself while looping)", function(v)
+		autoAnti = false
+		ANTILAG.set(v)
+	end)
+	loopInfo = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1,
+		Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = MUTED, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "Loop is off"}, exCard)
+
+	---------------------------------------------------------------- LUAU HELP (tap a snippet to insert it into the editor)
+	local helpCard = listCard(pExec, "Luau Help  (tap to insert)")
+	local function tip(text)
+		new("TextLabel", {Size = UDim2.new(1, 0, 0, 14), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1,
+			Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = MUTED, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top, Text = text}, helpCard)
+	end
+	tip("-- starts a comment: the game ignores that line.")
+	tip("wait() or task.wait(seconds) pauses the script. task.wait is the newer one.")
+	tip("You don't need to write a loop: use the Loop button with times and every.")
+	tip("GitHub raw: paste a github.com link in the link box, it is turned into a raw link for you.")
+
+	local SNIPPETS = {
+		{"Loop (while wait)", "while wait() do\n    --paste your script you loop here\nend\n"},
+		{"Loop (task.wait)", "while task.wait(1) do\n    --your code here\nend\n"},
+		{"For loop", "for i = 1, 10 do\n    print(i)\nend\n"},
+		{"If / else", "if condition then\n    --code\nelse\n    --other code\nend\n"},
+		{"Function", "local function myFunction()\n    --code\nend\n\nmyFunction()\n"},
+		{"Safe run (pcall)", "local ok, err = pcall(function()\n    --code that might error\nend)\nif not ok then warn(err) end\n"},
+		{"Every frame", "game:GetService(\"RunService\").Heartbeat:Connect(function(dt)\n    --runs every frame\nend)\n"},
+		{"My character", "local player = game.Players.LocalPlayer\nlocal char = player.Character or player.CharacterAdded:Wait()\nlocal hum = char:WaitForChild(\"Humanoid\")\n"},
+		{"GitHub raw", "loadstring(game:HttpGet(\"https://raw.githubusercontent.com/USER/REPO/main/script.lua\"))()\n"},
+	}
+	local hg = new("Frame", {Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1}, helpCard)
+	new("UIGridLayout", {CellSize = UDim2.new(0.5, -4, 0, 32), CellPadding = UDim2.new(0, 8, 0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder}, hg)
+	for i, sn in ipairs(SNIPPETS) do
+		local b = new("TextButton", {LayoutOrder = i, Text = sn[1], Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = WHITE,
+			BackgroundColor3 = WHITE, BackgroundTransparency = 0.9, AutoButtonColor = false}, hg)
+		corner(b, 10); stroke(b, 0.75, WHITE)
+		b.Activated:Connect(function()
+			insertAtCursor(sn[2], false)
+			setStatus("Inserted: " .. sn[1], GREEN)
+		end)
+	end
 end
 
 local pVis = addTab("Visuals")
