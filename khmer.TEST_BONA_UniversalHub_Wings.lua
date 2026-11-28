@@ -416,7 +416,13 @@ do
 		txt(r, title, UDim2.new(0, 12, 0, 4), UDim2.new(1, -24, 0, 14), {color = MUTED, size = 10})
 		return txt(r, value, UDim2.new(0, 12, 0, 18), UDim2.new(1, -24, 0, 18), {font = Enum.Font.GothamBold, size = 13})
 	end
-	stat(1, "Player", lp.DisplayName)
+	local playerLbl = stat(1, "Player", lp.DisplayName)
+	do
+		local ts = game:GetService("TextService"):GetTextSize(lp.DisplayName, 13, Enum.Font.GothamBold, Vector2.new(1000, 40))
+		new("ImageLabel", {Name = "NamePic", Image = "rbxassetid://9892064833", BackgroundTransparency = 1, BorderSizePixel = 0,
+			ScaleType = Enum.ScaleType.Fit, Size = UDim2.new(0, 16, 0, 16),
+			Position = UDim2.new(0, math.min(12 + ts.X + 6, 140), 0, 19)}, playerLbl.Parent)
+	end
 	local gameLbl = stat(2, "Game", "Loading...")
 	local pingLbl2 = stat(3, "Ping", "-")
 	local fpsLbl2 = stat(4, "FPS", "-")
@@ -2405,10 +2411,17 @@ do
 		return n + 1
 	end
 	local function refreshGutter()
-		local n = lineCount(box.Text)
+		local n = math.min(lineCount(box.Text), 50000)
 		local parts = table.create(n)
 		for i = 1, n do parts[i] = tostring(i) end
 		gutter.Text = table.concat(parts, "\n")
+	end
+
+	local gTok = 0
+	local function scheduleGutter()
+		gTok += 1
+		local tk = gTok
+		task.delay(0.12, function() if tk == gTok then refreshGutter() end end)
 	end
 
 	-- undo history -------------------------------------------------------
@@ -2420,7 +2433,7 @@ do
 		end
 	end
 	box:GetPropertyChangedSignal("Text"):Connect(function()
-		refreshGutter()
+		scheduleGutter()
 		if suppress then return end
 		snapTok += 1
 		local tk = snapTok
@@ -2489,14 +2502,67 @@ do
 		end
 	end
 
-	local function runCode()
-		local code = box.Text
+	-- animated popup: pops in, holds, then fades up. Failure shakes.
+	local toast
+	local function popup(ok, msg)
+		if toast then toast:Destroy() toast = nil end
+		local color = ok and GREEN or RED
+		local g = new("CanvasGroup", {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22),
+			Size = UDim2.new(0, 210, 0, 46), BackgroundColor3 = INK, BackgroundTransparency = 0.05, BorderSizePixel = 0,
+			ZIndex = 300, GroupTransparency = 1}, gui)
+		corner(g, 23); stroke(g, 0.15, color)
+		local sc = new("UIScale", {Scale = 0.6}, g)
+		local dot = new("TextLabel", {Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(0, 8, 0.5, -15), BackgroundColor3 = color,
+			BorderSizePixel = 0, Text = ok and "OK" or "X", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = INK}, g)
+		corner(dot, 15)
+		txt(g, msg, UDim2.new(0, 48, 0, 0), UDim2.new(1, -58, 1, 0), {font = Enum.Font.GothamBold, size = 15, color = color})
+		toast = g
+
+		tween(g, 0.25, {GroupTransparency = 0})
+		TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+
+		task.spawn(function()
+			if not ok then
+				for _, dx in ipairs({-8, 8, -6, 6, -3, 3, 0}) do
+					if toast ~= g then return end
+					tween(g, 0.045, {Position = UDim2.new(0.5, dx, 0, 22)})
+					task.wait(0.045)
+				end
+			end
+			task.wait(1.6)
+			if toast ~= g then return end
+			tween(g, 0.3, {GroupTransparency = 1, Position = UDim2.new(0.5, 0, 0, 6)})
+			TweenService:Create(sc, TweenInfo.new(0.3), {Scale = 0.85}):Play()
+			task.wait(0.32)
+			if toast == g then toast = nil end
+			g:Destroy()
+		end)
+	end
+
+	-- clipboard helpers (tries every common executor function name)
+	local function getClip()
+		local fn = readclipboard or getclipboard or getclipboardtext or get_clipboard or fromclipboard
+			or (Clipboard and Clipboard.get)
+		if not fn then return nil, "unavailable" end
+		local ok1, clip = pcall(fn)
+		if ok1 and type(clip) == "string" and clip ~= "" then return clip end
+		return nil, "empty"
+	end
+	local function setClip(text)
+		local fn = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
+		if not fn then return false end
+		return (pcall(fn, text))
+	end
+
+	-- runs ANY source text (no size limit, it never goes through the editor box)
+	local function runSource(code)
 		if (code:gsub("%s", "")) == "" then setStatus("Nothing to run") return end
 		local loader = loadstring or load
-		if not loader then setStatus("Not work: loadstring is not available here", RED) return end
+		if not loader then setStatus("Not work: loadstring is not available here", RED) popup(false, "Not work") return end
 		local fn, err = loader(code)
 		if not fn then
 			setStatus("Not work: syntax error - " .. tostring(err), RED)
+			popup(false, "Not work")
 			warn("[BONA Executor] Not work: syntax error - " .. tostring(err))
 			return
 		end
@@ -2505,13 +2571,17 @@ do
 			local ok1, e = pcall(fn)
 			if ok1 then
 				setStatus("Successfully", GREEN)
+				popup(true, "Successfully")
 				print("[BONA Executor] Successfully")
 			else
 				setStatus("Not work: " .. tostring(e), RED)
+				popup(false, "Not work")
 				warn("[BONA Executor] Not work: " .. tostring(e))
 			end
 		end)
 	end
+
+	local function runCode() runSource(box.Text) end
 
 	btnRow({
 		{"New Line", function() insertAtCursor("", true) end},
@@ -2537,21 +2607,68 @@ do
 	btnRow({
 		{"Execute", runCode, accent = true},
 		{"Copy", function()
-			local fn = setclipboard or toclipboard
-			if fn then pcall(fn, box.Text) setStatus("Copied", GREEN) else setStatus("Clipboard is not available here", RED) end
+			if setClip(box.Text) then setStatus("Copied", GREEN) else setStatus("Clipboard is not available here", RED) end
 		end},
 		{"Paste", function()
-			local fn = readclipboard or getclipboard
-			if not fn then setStatus("Clipboard is not available here", RED) return end
-			local ok1, clip = pcall(fn)
-			if ok1 and type(clip) == "string" and clip ~= "" then
+			local clip, why = getClip()
+			if clip then
 				insertAtCursor(clip, false)
-				setStatus("Pasted", GREEN)
-			else
+				if #clip > 190000 then
+					setStatus("Pasted, but the editor box holds about 200k characters. Use Paste & Run for bigger scripts.", RED)
+				else
+					setStatus("Pasted", GREEN)
+				end
+			elseif why == "empty" then
 				setStatus("Clipboard is empty", RED)
+			else
+				box:CaptureFocus()
+				setStatus("No clipboard access: long-press the editor, then tap Paste", RED)
 			end
 		end},
 	})
+
+	-- Big scripts: the editor box is limited by Roblox, so these run the source directly (no size limit).
+	btnRow({
+		{"Paste & Run  (big scripts, no size limit)", function()
+			local clip, why = getClip()
+			if clip then
+				runSource(clip)
+			else
+				setStatus(why == "empty" and "Clipboard is empty" or "Clipboard is not available here", RED)
+				popup(false, "Not work")
+			end
+		end, accent = true},
+	})
+	local srcRow = new("Frame", {Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1}, exCard)
+	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6)}, srcRow)
+	local srcBox = new("TextBox", {Size = UDim2.new(0.68, -3, 1, 0), BackgroundColor3 = INK, BackgroundTransparency = 0.3,
+		BorderSizePixel = 0, TextColor3 = WHITE, PlaceholderText = "file name or https:// link", PlaceholderColor3 = MUTED,
+		Font = Enum.Font.Gotham, TextSize = 12, ClearTextOnFocus = false, Text = "", TextXAlignment = Enum.TextXAlignment.Left}, srcRow)
+	corner(srcBox, 10); stroke(srcBox, 0.7, BLUE)
+	new("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, srcBox)
+	local runSrc = new("TextButton", {Text = "Run file / link", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+		BackgroundColor3 = BLUE2, BackgroundTransparency = 0.15, AutoButtonColor = false, Size = UDim2.new(0.32, -3, 1, 0)}, srcRow)
+	corner(runSrc, 10); stroke(runSrc, 0.5, BLUE)
+	runSrc.Activated:Connect(function()
+		local ref = srcBox.Text:match("^%s*(.-)%s*$")
+		if ref == "" then setStatus("Type a file name or a link first", RED) return end
+		setStatus("Loading...")
+		task.spawn(function()
+			local ok1, code
+			if ref:match("^https?://") then
+				ok1, code = pcall(function() return game:HttpGet(ref) end)
+			else
+				ok1, code = pcall(function() return readfile(ref) end)
+			end
+			if ok1 and type(code) == "string" and code ~= "" then
+				runSource(code)
+			else
+				setStatus("Not work: could not load " .. ref, RED)
+				popup(false, "Not work")
+				warn("[BONA Executor] Not work: could not load " .. ref)
+			end
+		end)
+	end)
 end
 
 local pVis = addTab("Visuals")
