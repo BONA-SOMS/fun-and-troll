@@ -382,12 +382,15 @@ local BADGES = {
 }
 local BadgeOn = {}      -- badge name -> true
 local badgeSlots = {}   -- places that show the selected badges
-local function addBadgeSlot(frame, size, max, hint)
-	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 4),
+local function addBadgeSlot(frame, size, max, hint, dynamic)
+	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Wraps = not dynamic, Padding = UDim.new(0, 4),
 		SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center}, frame)
-	table.insert(badgeSlots, {frame = frame, size = size, max = max, hint = hint})
+	table.insert(badgeSlots, {frame = frame, size = size, max = max, hint = hint, dynamic = dynamic})
 end
 local function refreshBadges()
+	for i = #badgeSlots, 1, -1 do
+		if badgeSlots[i].dynamic and not badgeSlots[i].frame.Parent then table.remove(badgeSlots, i) end
+	end
 	for _, slot in ipairs(badgeSlots) do
 		for _, c in ipairs(slot.frame:GetChildren()) do
 			if c:IsA("ImageLabel") or c:IsA("TextLabel") then c:Destroy() end
@@ -415,6 +418,65 @@ local function refreshBadges()
 				Size = UDim2.new(1, 0, 0, slot.size)}, slot.frame)
 		end
 	end
+end
+
+-- LEADERBOARD BADGES: finds your own name on the Roblox leaderboard / player list (and game leaderboards)
+-- and draws the selected badges right after it. Local only: other players never see it.
+do
+	local function attachToLabel(label)
+		if label:FindFirstChild("BONA_Badges") then return end
+		local h = math.clamp(label.AbsoluteSize.Y - 6, 14, 22)
+		local box = new("Frame", {Name = "BONA_Badges", BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.new(0, 0, 0, h), AnchorPoint = Vector2.new(0, 0.5), ZIndex = label.ZIndex + 1}, label)
+		addBadgeSlot(box, h, 6, false, true)
+		local function place()
+			local w = label.TextBounds.X
+			local al = label.TextXAlignment
+			local x
+			if al == Enum.TextXAlignment.Left then
+				x = w + 6
+			elseif al == Enum.TextXAlignment.Center then
+				x = (label.AbsoluteSize.X + w) / 2 + 6
+			else
+				x = label.AbsoluteSize.X + 6
+			end
+			box.Position = UDim2.new(0, x, 0.5, 0)
+		end
+		place()
+		label:GetPropertyChangedSignal("TextBounds"):Connect(place)
+		label:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
+		refreshBadges()
+	end
+
+	local function scanLeaderboards()
+		local roots = {}
+		local okCG, cg = pcall(function() return game:GetService("CoreGui") end)
+		if okCG and cg then
+			local pl = cg:FindFirstChild("PlayerList")
+			if pl then table.insert(roots, pl) end
+		end
+		for _, g in ipairs(lp.PlayerGui:GetChildren()) do
+			if g:IsA("ScreenGui") then
+				local n = g.Name:lower()
+				if n:find("leader") or n:find("playerlist") or n:find("scoreboard") then table.insert(roots, g) end
+			end
+		end
+		local a, b, c = lp.DisplayName, lp.Name, "@" .. lp.Name
+		for _, root in ipairs(roots) do
+			for _, d in ipairs(root:GetDescendants()) do
+				if (d:IsA("TextLabel") or d:IsA("TextButton")) and (d.Text == a or d.Text == b or d.Text == c) then
+					attachToLabel(d)
+				end
+			end
+		end
+	end
+
+	task.spawn(function()
+		while gui.Parent do
+			if next(BadgeOn) ~= nil then pcall(scanLeaderboards) end
+			task.wait(1)
+		end
+	end)
 end
 
 local HERO = {}
