@@ -362,6 +362,61 @@ end)
 ---------------------------------------------------------------- DASHBOARD PAGE
 local pDash = addTab("Dashboard")
 -- HERO (profile header like the reference pics: avatar, title, badge, quick access, live stats)
+-- FAKE BADGES (cosmetic, local only: only you see them inside this hub)
+local BADGES = {
+	{"Developer", "127904742940104"},
+	{"Premium", "10885647358"},
+	{"Verified", "77631816405170"},
+	{"Roblox", "6842176083"},
+	{"HD Admin", "9739215872"},
+	{"HD Admin Plus", "8150415107"},
+	{"Secret Person", "12440587221"},
+	{"Kamui", "131851943362354"},
+	{"Majima Family", "13696923800"},
+	{"Obito Eye", "135059608215715"},
+	{"Koten Hashira", "91973650376854"},
+	{"Command Script", "13436029894"},
+	{"The Client", "120274788136096"},
+	{"The Editor", "115785392375042"},
+	{"The Ticket", "17480213324"},
+}
+local BadgeOn = {}      -- badge name -> true
+local badgeSlots = {}   -- places that show the selected badges
+local function addBadgeSlot(frame, size, max, hint)
+	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 4),
+		SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center}, frame)
+	table.insert(badgeSlots, {frame = frame, size = size, max = max, hint = hint})
+end
+local function refreshBadges()
+	for _, slot in ipairs(badgeSlots) do
+		for _, c in ipairs(slot.frame:GetChildren()) do
+			if c:IsA("ImageLabel") or c:IsA("TextLabel") then c:Destroy() end
+		end
+		local shown, extra, order = 0, 0, 0
+		for _, b in ipairs(BADGES) do
+			if BadgeOn[b[1]] then
+				if shown < slot.max then
+					shown += 1
+					order += 1
+					new("ImageLabel", {Name = "Badge", LayoutOrder = order, Image = "rbxassetid://" .. b[2], BackgroundTransparency = 1,
+						BorderSizePixel = 0, ScaleType = Enum.ScaleType.Fit, Size = UDim2.new(0, slot.size, 0, slot.size)}, slot.frame)
+				else
+					extra += 1
+				end
+			end
+		end
+		if extra > 0 then
+			new("TextLabel", {Name = "More", LayoutOrder = 99, Text = "+" .. extra, Font = Enum.Font.GothamBold, TextSize = 11,
+				TextColor3 = MUTED, BackgroundTransparency = 1, Size = UDim2.new(0, 22, 0, slot.size)}, slot.frame)
+		end
+		if shown == 0 and slot.hint then
+			new("TextLabel", {Name = "Hint", Text = "No badges yet. Turn some on in Misc > Fake Badges.", Font = Enum.Font.Gotham,
+				TextSize = 11, TextColor3 = MUTED, BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left,
+				Size = UDim2.new(1, 0, 0, slot.size)}, slot.frame)
+		end
+	end
+end
+
 local HERO = {}
 do
 	local MarketplaceService = game:GetService("MarketplaceService")
@@ -444,6 +499,16 @@ do
 	end
 end
 
+do
+	local bc = baseCard(pDash, UDim2.new(1, -6, 0, 0))
+	bc.AutomaticSize = Enum.AutomaticSize.Y
+	new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10),
+		PaddingRight = UDim.new(0, 10)}, bc)
+	new("UIListLayout", {Padding = UDim.new(0, 6)}, bc)
+	txt(bc, "Your badges  (local only)", UDim2.new(), UDim2.new(1, 0, 0, 16), {font = Enum.Font.GothamBold, size = 12, color = BLUE})
+	local strip = new("Frame", {Size = UDim2.new(1, 0, 0, 26), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1}, bc)
+	addBadgeSlot(strip, 24, 30, true)
+end
 local top = new("Frame", {Size = UDim2.new(1, -6, 0, 124), BackgroundTransparency = 1}, pDash)
 new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8)}, top)
 
@@ -2780,6 +2845,40 @@ button(mc, "Rejoin Server", function() TeleportService:Teleport(game.PlaceId, lp
 button(mc, "Reset Character", function() local h = hum() if h then h.Health = 0 end end)
 button(mc, "Destroy UI", function() stopFly() gui:Destroy() end)
 
+-- Fake badge picker (tap a badge to show / hide it next to you)
+do
+	local bcard = listCard(pMisc, "Fake Badges  (only you see them)")
+	local tiles = {}
+	local function paint()
+		for name, t in pairs(tiles) do
+			local on = BadgeOn[name] == true
+			t.Color = on and BLUE or WHITE
+			t.Transparency = on and 0.05 or 0.82
+		end
+		refreshBadges()
+	end
+	button(bcard, "All on", function() for _, b in ipairs(BADGES) do BadgeOn[b[1]] = true end paint() end)
+	button(bcard, "All off", function() BadgeOn = {} paint() end)
+	local grid = new("Frame", {Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1}, bcard)
+	new("UIGridLayout", {CellSize = UDim2.new(1 / 3, -6, 0, 62), CellPadding = UDim2.new(0, 8, 0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder}, grid)
+	for i, b in ipairs(BADGES) do
+		local tile = new("TextButton", {LayoutOrder = i, Text = "", AutoButtonColor = false, BackgroundColor3 = WHITE,
+			BackgroundTransparency = 0.93, BorderSizePixel = 0}, grid)
+		corner(tile, 10)
+		tiles[b[1]] = stroke(tile, 0.82)
+		new("ImageLabel", {Image = "rbxassetid://" .. b[2], BackgroundTransparency = 1, BorderSizePixel = 0,
+			ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6),
+			Size = UDim2.new(0, 32, 0, 32)}, tile)
+		txt(tile, b[1], UDim2.new(0, 2, 0, 42), UDim2.new(1, -4, 0, 16), {size = 9, align = Enum.TextXAlignment.Center})
+		tile.Activated:Connect(function()
+			BadgeOn[b[1]] = not BadgeOn[b[1]] or nil
+			paint()
+		end)
+	end
+	paint()
+end
+
 ---------------------------------------------------------------- AVATAR PANEL
 txt(avatarPanel, "Avatar", UDim2.new(0, 14, 0, 12), UDim2.new(1, -28, 0, 16), {font = Enum.Font.GothamBold, size = 12, color = BLUE})
 local avatarImg = new("ImageLabel", {Position = UDim2.new(0, 12, 0, 34), Size = UDim2.new(1, -24, 0, 126),
@@ -2797,6 +2896,10 @@ txt(avatarPanel, "Account age", UDim2.new(0, 14, 0, 258), UDim2.new(1, -28, 0, 1
 txt(avatarPanel, lp.AccountAge .. " days", UDim2.new(0, 14, 0, 274), UDim2.new(1, -28, 0, 16), {size = 12})
 txt(avatarPanel, "User ID", UDim2.new(0, 14, 0, 296), UDim2.new(1, -28, 0, 14), {color = MUTED, size = 11})
 txt(avatarPanel, tostring(lp.UserId), UDim2.new(0, 14, 0, 310), UDim2.new(1, -28, 0, 14), {size = 11})
+do
+	local strip = new("Frame", {Position = UDim2.new(0, 14, 0, 202), Size = UDim2.new(1, -28, 0, 15), BackgroundTransparency = 1}, avatarPanel)
+	addBadgeSlot(strip, 15, 5, false)
+end
 
 -- A / C switch: A = avatar preview, C = console (with a Clear button)
 do
