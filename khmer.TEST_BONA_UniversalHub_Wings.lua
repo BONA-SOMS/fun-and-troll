@@ -2679,6 +2679,97 @@ toggle(vc, "Player ESP", function(v)
 end)
 toggle(vc, "Fullbright", function(v) setFullbright(v) end)
 
+-- INSTANT GRAB: removes the hold time on every ProximityPrompt and restores it when switched off.
+-- Works for PC (key) and mobile (tap) because it only changes HoldDuration; new prompts are picked up automatically.
+do
+	local grabCard = listCard(pVis, "Instant Grab")
+	local info = txt(grabCard, "Off", UDim2.new(), UDim2.new(1, 0, 0, 16), {color = MUTED, size = 11})
+
+	local enabled = false
+	local original = {}   -- prompt -> original HoldDuration
+	local links = {}      -- prompt -> {changed connection, destroying connection}
+	local count = 0
+	local addedConn
+
+	local function setInfo()
+		info.Text = enabled and ("On  -  " .. count .. " prompt(s) instant") or "Off"
+	end
+
+	local function forget(prompt)
+		local c = links[prompt]
+		if c then
+			c[1]:Disconnect()
+			c[2]:Disconnect()
+			links[prompt] = nil
+		end
+		if original[prompt] ~= nil then
+			original[prompt] = nil
+			count -= 1
+		end
+	end
+
+	local function grab(prompt)
+		if original[prompt] ~= nil then return end
+		original[prompt] = prompt.HoldDuration
+		count += 1
+		if prompt.HoldDuration ~= 0 then prompt.HoldDuration = 0 end
+		links[prompt] = {
+			-- if the game sets a hold time again, remember it (for restore) and keep it instant
+			prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+				local v = prompt.HoldDuration
+				if enabled and v ~= 0 then
+					original[prompt] = v
+					prompt.HoldDuration = 0
+				end
+			end),
+			prompt.Destroying:Connect(function() forget(prompt) end),
+		}
+	end
+
+	local function release()
+		for prompt, hold in pairs(original) do
+			if prompt.Parent then prompt.HoldDuration = hold end
+		end
+		for _, c in pairs(links) do
+			c[1]:Disconnect()
+			c[2]:Disconnect()
+		end
+		original, links, count = {}, {}, 0
+	end
+
+	-- scan the prompts that already exist (in small slices so the game never hitches)
+	local function scan()
+		local n = 0
+		for _, d in ipairs(workspace:GetDescendants()) do
+			if d:IsA("ProximityPrompt") then grab(d) end
+			n += 1
+			if n % 800 == 0 then
+				task.wait()
+				if not enabled then return end
+			end
+		end
+		setInfo()
+	end
+
+	toggle(grabCard, "Instant Grab", function(v)
+		enabled = v
+		if addedConn then addedConn:Disconnect() addedConn = nil end
+		if v then
+			addedConn = workspace.DescendantAdded:Connect(function(d)
+				if d:IsA("ProximityPrompt") then
+					grab(d)
+					setInfo()
+				end
+			end)
+			setInfo()
+			task.spawn(scan)
+		else
+			release()
+			setInfo()
+		end
+	end)
+end
+
 ---------------------------------------------------------------- MISC PAGE
 local pMisc = addTab("Misc")
 local mc = listCard(pMisc, "Utilities")
