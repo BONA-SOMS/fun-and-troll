@@ -2559,6 +2559,20 @@ do
 	local GREEN = Color3.fromRGB(120, 230, 165)
 
 	local pExec = addTab("Executor")
+
+	-- EX = Executor, SSPY = SimpleSpy
+	local setMode
+	local modeRow = new("Frame", {Size = UDim2.new(1, -6, 0, 34), BackgroundTransparency = 1}, pExec)
+	new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8)}, modeRow)
+	local modeBtns = {}
+	for _, m in ipairs({{"EX", "EX  Executor"}, {"SSPY", "SSPY  SimpleSpy"}}) do
+		local b = new("TextButton", {Text = m[2], Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+			BackgroundColor3 = INK, BackgroundTransparency = 0.25, AutoButtonColor = false, Size = UDim2.new(0.5, -4, 1, 0)}, modeRow)
+		corner(b, 10); stroke(b, 0.55, BLUE)
+		b.Activated:Connect(function() setMode(m[1]) end)
+		modeBtns[m[1]] = b
+	end
+
 	local exCard = listCard(pExec, "BONA Executor")
 
 	-- editor frame -----------------------------------------------------
@@ -3098,6 +3112,151 @@ do
 			setStatus("Inserted: " .. sn[1], GREEN)
 		end)
 	end
+
+	---------------------------------------------------------------- SSPY (SimpleSpy remote spy: loads the official script, then show / hide / shutdown from here)
+	local SPY_URL = "https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpyBeta.lua"
+	local spyCard = listCard(pExec, "SSPY  -  SimpleSpy V3")
+	local function spyNote(text)
+		new("TextLabel", {Size = UDim2.new(1, 0, 0, 14), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1,
+			Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = MUTED, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top, Text = text}, spyCard)
+	end
+	spyNote("SimpleSpy is a remote spy: it logs the remote calls (FireServer / InvokeServer) the game sends and turns them into code you can copy.")
+	spyNote("Tap Load once. Its own window opens: tap a remote in the left list, then Copy Code or Run Code.")
+	spyNote("It needs an executor that supports hookmetamethod. Some mobile executors only support part of it.")
+
+	local spyStatus = new("TextLabel", {Size = UDim2.new(1, 0, 0, 16), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1,
+		Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = MUTED, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top, Text = "Not loaded"}, spyCard)
+	local function setSpy(msg, color)
+		spyStatus.Text = msg
+		spyStatus.TextColor3 = color or MUTED
+	end
+
+	local spyBox = new("TextBox", {Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = INK, BackgroundTransparency = 0.3, BorderSizePixel = 0,
+		TextColor3 = WHITE, PlaceholderText = "SimpleSpy link", PlaceholderColor3 = MUTED, Font = Enum.Font.Gotham, TextSize = 11,
+		ClearTextOnFocus = false, Text = SPY_URL, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, spyCard)
+	corner(spyBox, 10); stroke(spyBox, 0.7, BLUE)
+	new("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, spyBox)
+
+	local function rowIn(parent, items)
+		local r = new("Frame", {Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1}, parent)
+		new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6)}, r)
+		local n = #items
+		for _, it in ipairs(items) do
+			local b = new("TextButton", {Text = it[1], Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = WHITE,
+				BackgroundColor3 = it.accent and BLUE2 or WHITE, BackgroundTransparency = it.accent and 0.15 or 0.9,
+				AutoButtonColor = false, Size = UDim2.new(1 / n, -(6 * (n - 1)) / n, 1, 0)}, r)
+			corner(b, 10); stroke(b, 0.75, it.accent and BLUE or WHITE)
+			b.Activated:Connect(it[2])
+		end
+	end
+
+	local function spyFail(msg)
+		setSpy("Not work: " .. msg, RED)
+		popup(false, "Not work")
+		warn("[BONA SSPY] Not work: " .. msg)
+	end
+
+	local function runSpyCode(code)
+		local loader = loadstring or load
+		if not loader then spyFail("loadstring is not available here") return end
+		local fn, err = loader(code)
+		if not fn then spyFail("syntax error - " .. tostring(err)) return end
+		local ok1, e = pcall(fn)
+		if ok1 then
+			setSpy("Successfully: SimpleSpy is running", GREEN)
+			popup(true, "Successfully")
+			print("[BONA SSPY] Successfully")
+		else
+			spyFail(tostring(e))
+		end
+	end
+
+	local function loadSpy()
+		setSpy("Loading SimpleSpy...")
+		task.spawn(function()
+			local ref = spyBox.Text:match("^%s*(.-)%s*$")
+			if ref == "" then ref = SPY_URL end
+			local code, info = loadSource(ref)
+			if not code then spyFail(info) return end
+			runSpyCode(code)
+		end)
+	end
+
+	local function spyLoaded()
+		return getgenv and getgenv().SimpleSpyExecuted
+	end
+
+	-- the SimpleSpy window is a ScreenGui that contains its "Copy Code" button
+	local function findSpyGui()
+		local roots = {}
+		if gethui then
+			local ok1, h = pcall(gethui)
+			if ok1 and h then table.insert(roots, h) end
+		end
+		pcall(function() table.insert(roots, game:GetService("CoreGui")) end)
+		table.insert(roots, lp.PlayerGui)
+		for _, root in ipairs(roots) do
+			for _, d in ipairs(root:GetDescendants()) do
+				if d:IsA("TextButton") and d.Text == "Copy Code" then
+					local g = d:FindFirstAncestorOfClass("ScreenGui")
+					if g then return g end
+				end
+			end
+		end
+		return nil
+	end
+
+	local function toggleSpy()
+		if not spyLoaded() then setSpy("Load SimpleSpy first", RED) return end
+		local g = findSpyGui()
+		if g then
+			g.Enabled = not g.Enabled
+			setSpy(g.Enabled and "SimpleSpy window shown" or "SimpleSpy window hidden")
+		else
+			setSpy("Could not find the SimpleSpy window", RED)
+		end
+	end
+
+	local function stopSpy()
+		local shutdown = getgenv and getgenv().SimpleSpyShutdown
+		if type(shutdown) == "function" then
+			pcall(shutdown)
+			setSpy("SimpleSpy shut down", GREEN)
+		else
+			setSpy("SimpleSpy is not running")
+		end
+	end
+
+	local function spyFromEditor()
+		local code = box.Text
+		if (code:gsub("%s", "")) == "" then
+			setSpy("The editor is empty: paste the SimpleSpy script in EX first", RED)
+			return
+		end
+		setSpy("Running the editor script...")
+		task.spawn(runSpyCode, code)
+	end
+
+	rowIn(spyCard, {
+		{"Load SimpleSpy", loadSpy, accent = true},
+		{"Show / Hide", toggleSpy},
+	})
+	rowIn(spyCard, {
+		{"Run from editor", spyFromEditor},
+		{"Shutdown", stopSpy},
+	})
+
+	setMode = function(m)
+		exCard.Visible = (m == "EX")
+		helpCard.Visible = (m == "EX")
+		spyCard.Visible = (m == "SSPY")
+		for key, b in pairs(modeBtns) do
+			b.BackgroundColor3 = (key == m) and BLUE2 or INK
+		end
+	end
+	setMode("EX")
 end
 
 local pVis = addTab("Visuals")
